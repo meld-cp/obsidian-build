@@ -1,6 +1,25 @@
-import { CachedMetadata, Editor, MarkdownView, Notice, Plugin, TFile } from 'obsidian';
+import { CachedMetadata, Editor, MarkdownView, normalizePath, Notice, Plugin, TFile } from 'obsidian';
+//import * as Mustache from 'mustache';
+//import {render as mustacheRender} from 'mustache';
 
-// Remember to rename these classes and interfaces!
+//const  = ( (MustacheNs as any).default as MustacheNs);
+// TODO Remember to rename these classes and interfaces!
+//import Mustache = require('mustache');
+//import * as MustacheNs from 'mustache'
+//import {render} from 'mustache'
+import * as HB from  'handlebars';
+//import path from 'path';
+
+HB.registerHelper('format', function (value, options) {
+    // Helper parameters
+    const dp = parseInt( options.hash['decimalPlaces'] ) || 2;
+
+	// Parse to float
+    value = parseFloat(value);
+
+    // Returns the formatted number
+    return value.toFixed(dp);
+});
 
 interface MyPluginSettings {
 	mySetting: string;
@@ -16,14 +35,25 @@ export default class MyPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		// try {
+		// 	this.registerExtensions(['html'], 'meld-build-html-view');
+		// } catch (error) {
+		// 	new Notice(error);
+		// 	//await showError(`File extensions ${HTML_FILE_EXTENSIONS} had been registered by other plugin!`);
+		// }
+
 		this.addCommand({
 			id: 'meld-build-run',
 			name: 'Run',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				//editor.replaceSelection('Sample Editor Command');
-				const b = new Builder();
-				b.compile(editor, view.file);
-				b.run();
+				try{
+					const b = new Compiler();
+					const runner = b.compile(editor, view.file);
+					runner();
+				}catch(e){
+					console.error(e);
+					new Notice(e);
+				}
 			}
 		});
 
@@ -42,34 +72,64 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class DataSet{
-	name: string;
-	columns: string[] = [];
-	rows: string[][] = [];
+class DataSet extends Array<DataSetRow> {
+	columns: Array<string> = [];
 }
 
-interface ICompiled{
-	name: string;
-	codeBlocks: string[];
-	data: DataSet[]
+interface IDataSetCollection {
+	[name:string] : DataSet
 }
 
-export class Builder{
+interface IRowDataValueCollection {
+	[column:string | number] : unknown
+}
+
+class DataSetRow implements IRowDataValueCollection{
 	
-	private compiled : ICompiled;
+	[column: string]: unknown;
 
-	compile(editor: Editor, file: TFile) {
-		const fileCache = app.metadataCache.getFileCache(file);
-		console.log({fileCache});
-		this.compiled = {
-			name: file.basename,
-			codeBlocks: fileCache ? this.fetchCodeBlocks(editor, fileCache) : [],
-			data: fileCache ? this.fetchData(editor, fileCache) : [],
-		};
+	constructor(columnNames:string[], data: unknown[]){
+		for (let colIdx = 0; colIdx < columnNames.length; colIdx++) {
+			const value = data.at(colIdx);
+			const colName = columnNames[colIdx].trim();
+			if ( colName != '' ){
+				this[colName] = value;
+			}
+		}
 	}
 
-	private fetchData(editor: Editor, fileCache: CachedMetadata): DataSet[] {
-		const result: DataSet[] = [];
+}
+
+interface IContext{
+	data: IDataSetCollection;
+	templates: ICodeBlock[];
+	log: (...data: unknown[]) => void;
+	render: (cb :ICodeBlock, data:object) => string;
+	output: ( file:string, content:string, open:boolean ) => void;
+	open: (linkText:string) => void;
+}
+
+interface ICodeBlock{
+	languages:string[];
+	content:string;
+}
+
+// interface ITemplateBuilder{
+// 	build: () => string;
+// }
+
+class Parser {
+
+	public fetchData(editor: Editor, fileCache: CachedMetadata | undefined): IDataSetCollection {
+		const result:{
+			[index:string] : DataSet
+		} = {};
+		
+		if ( fileCache == undefined){
+			return result;
+		}
+
+
 		if (!fileCache.sections){
 			return result;
 		}
@@ -81,7 +141,7 @@ export class Builder{
 			if (section.type == 'heading' ){
 				headingIdx++;
 				lastHeading = fileCache.headings?.at(headingIdx)?.heading ?? '?';
-				console.debug({lastHeading});
+				//console.debug({lastHeading});
 			} 
 			if (section.type == 'table' ){
 
@@ -91,24 +151,32 @@ export class Builder{
 
 				
 				const data: DataSet = new DataSet();
-				data.name = lastHeading;
 				
 				const tableLines = table.split('\n').map( e=>e.trim().slice(1,-1).trim());
-				console.debug(tableLines);
-				data.columns = tableLines.first()?.split('|').map( e=>e.trim()) ?? [];
-				for (let i = 1; i < tableLines.length; i++) {
-					const line = tableLines[i];
-					if (line.startsWith('---') ){
-						continue;
-					}
-					if (line.startsWith('|') && line.endsWith('|')){
-						continue;
-					}
-					const row = line.split('|').map( e=>e.trim());
-					data.rows.push(row);
-				}
+				//console.debug(tableLines);
+				data.columns = tableLines
+					.first()?.split('|')
+					.map( e=> this.convertToColumnName(e) )
+					.filter( e=>e.length > 0)
+					?? []
+				;
 
-				result.push( data );
+				for (let i = 1; i < tableLines.length; i++) {
+					const rowLine = tableLines[i];
+					//console.debug(line);
+					if (rowLine.startsWith('---') ){
+						continue;
+					}
+					if (rowLine.startsWith('|') && rowLine.endsWith('|')){
+						continue;
+					}
+					const rowValues : unknown[] = rowLine.split('|').map( e => this.covertFromString(e) );
+					data.push( new DataSetRow( data.columns, rowValues ) );
+				}
+				
+				const tableName = this.convertToTableName(lastHeading);
+				result[tableName] = data;
+				//result.push( data );
 				
 			}
 		}
@@ -116,9 +184,62 @@ export class Builder{
 		return result;
 	}
 
-	private fetchCodeBlocks(editor: Editor, cache: CachedMetadata): string[] {
-		const result: string[] = [];
-		cache.sections?.forEach(section => {
+	private looksLikeDate( str:string ): boolean {
+		/**
+		 * RegExps to test a string for a str starting with
+		 *  YYYY-MM-DD or YYYY-MM
+		 */
+		const rxY4M2D2 = /^[12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])/;
+		const rxY4M2 = /^[12]\d{3}-(0[1-9]|1[0-2])/;
+		return rxY4M2D2.test(str) || rxY4M2.test(str);
+
+	}
+
+	private convertToTableName( str:string ) : string {
+		return str.trim().replace(/\W/ig, '_').toLowerCase();
+	}
+
+	private convertToColumnName( str:string ) : string {
+		return str.trim().replace(/\W/ig, '_').toLowerCase();
+	}
+	
+	private covertFromString( str:string ) : string | number | Date {
+		const trimmed = str.trim();
+		//console.debug({trimmed});
+		//see: https://rgxdb.com/r/526K7G5W
+		
+		if ( this.looksLikeDate(trimmed) ){
+			const dp = Date.parse(trimmed);
+			if (!isNaN(dp)){
+				//const dt = new Date(dp);
+				return new Date(dp);
+			}
+		}
+
+		const flt = parseFloat( trimmed );
+		if ( !isNaN(flt) ){
+			return flt;
+		}
+
+		return trimmed;
+	}
+
+	public fetchCodeBlocks(
+		editor: Editor,
+		fileCache: CachedMetadata | undefined,
+		languages :string[]
+	): ICodeBlock[] {
+		const result: ICodeBlock[] = [];
+		
+		if ( fileCache == undefined){
+			return result;
+		}
+
+		if ( fileCache.sections == undefined ){
+			return result;
+		}
+		
+		fileCache.sections.forEach(section => {
 			if (section.type != 'code'){
 				return;
 			}
@@ -129,114 +250,121 @@ export class Builder{
 			if (lines.length <= 2){
 				return;
 			}
-			if ( !['```js', '```javascript'].find( e=> e.startsWith( lines[0].toLowerCase() ) )){
+			const lineStarts = languages.map( l=> '```'+l );
+			if ( !lineStarts.find( e=> e.startsWith( lines[0].toLowerCase() ) )){
 				return;
 			}
 			// remove first and last lines
 			lines = lines.slice(1,-1)
-			result.push(...lines);
+			result.push( { languages, content: lines.join('\n') } );
 		});
+
 		return result;
 	}
-	
-	private fetchHelperCode(): string{
-		// const result:unknown = {};
-		// result.log = (o) => console.log(o);
-		let result = `
-const $={};
-$.log = console.log;
-`
-		;
-
-// 		//Sum.. not needed
-// 		result += `
-// $.sum = function() {
-// 	return [...arguments].reduce( (c,p) => parseFloat(c) + parseFloat(p), 0.0 )
-// }
-// `
-
-		// load data sets
-		result += `$.data = {\n`;
-		//${JSON.stringify(d)}
-		this.compiled.data.forEach(d => {
-			const dataSetName = JSON.stringify(d.name.toLowerCase().replace(' ', '_').trim());
-			result += `  ${dataSetName} : [\n`
-			for (let i = 0; i < d.rows.length; i++) {
-				const r = d.rows[i];
-				result += '    {';
-				for (let j = 0; j < d.columns.length; j++) {
-					const c = d.columns[j];
-					const valAsNum = parseFloat(r[j]); 
-					const value = isNaN(valAsNum) ? JSON.stringify(r[j]) : valAsNum;
-					result += `'${c}':${value},`
-				}
-				result += '},\n';
-			}
-			result += `  ],\n`
-		});
-		result += `}\n`;
-
-		// return
-		return result;
-	}
-
-	run() {
-		console.debug(this.compiled);
-		
-		const scopedCode = this.fetchHelperCode() + this.compiled.codeBlocks.join('\n');
-		console.log(scopedCode);
-		try{
-			eval(scopedCode);
-		}catch(e){
-			console.error(e);
-			new Notice(e);
-		}
-	}
-
 
 }
 
-// class SampleModal extends Modal {
-// 	constructor(app: App) {
-// 		super(app);
-// 	}
+export class Compiler{
 
-// 	onOpen() {
-// 		const {contentEl} = this;
-// 		contentEl.setText('Woah!');
-// 	}
+	public compile(editor: Editor, file: TFile) : () => void {
+		const fileCache = app.metadataCache.getFileCache(file);
 
-// 	onClose() {
-// 		const {contentEl} = this;
-// 		contentEl.empty();
-// 	}
-// }
+		if (fileCache == null){
+			return () => {};
+		}
 
-// class SampleSettingTab extends PluginSettingTab {
-// 	plugin: MyPlugin;
+		const pzr = new Parser();
+		
+		// data
+		const data = pzr.fetchData(editor, fileCache);
 
-// 	constructor(app: App, plugin: MyPlugin) {
-// 		super(app, plugin);
-// 		this.plugin = plugin;
-// 	}
+		// code
+		const codeBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['js', 'javascript']);
+		const sourceCode = codeBlocks.map( cb => cb.content).join('\n');
 
-// 	display(): void {
-// 		const {containerEl} = this;
+		// templates
+		const templateBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['html']);
 
-// 		containerEl.empty();
+		// build context
+		const context : IContext = {
+			data: data,
+			templates: templateBlocks,
+			log: x => window.console.info( 'meld-build', x ),
+			render: (cb, data) =>{
+				const template = HB.compile( cb.content );
+				const result = template(data);
+				return result;
+			},
+			output: async (filename, content, open) =>{
+				
+				const activeFile = app.workspace.getActiveFile();
+				
+				//letoutputFile = normalizePath( newFileFolder.path + "/" + filename )
+				if (activeFile == null){
+					return;
+				}
 
-// 		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+				//console.debug( app.vault.getAbstractFileByPath(filename) );
+				const sanFilename = normalizePath(filename)
+					.replace('/', '_')
+					.replace('..', '_')
+				;
+				const outputFilename = normalizePath( `${activeFile.basename} ${sanFilename}` );
 
-// 		new Setting(containerEl)
-// 			.setName('Setting #1')
-// 			.setDesc('It\'s a secret')
-// 			.addText(text => text
-// 				.setPlaceholder('Enter your secret')
-// 				.setValue(this.plugin.settings.mySetting)
-// 				.onChange(async (value) => {
-// 					console.log('Secret: ' + value);
-// 					this.plugin.settings.mySetting = value;
-// 					await this.plugin.saveSettings();
-// 				}));
-// 	}
-// }
+				const newFilepath = normalizePath( activeFile.parent.path + "/" + outputFilename );
+				//console.debug({outputFilename,newFilepath});
+				const af = app.vault.getAbstractFileByPath(newFilepath);
+				if (af instanceof TFile){
+					await app.vault.trash(af, false);
+				}
+
+				await app.vault.create( newFilepath, content );
+			
+				new Notice(`${newFilepath} created`);
+				if (open){
+					await app.workspace.openLinkText( newFilepath, '' );
+				}
+			},
+			open: (linktext:string) => app.workspace.openLinkText( linktext, '' )
+
+		};
+
+		// return runner
+		return () => this.sandboxed(sourceCode, context);
+	}
+
+	// pathJoin(dir: string, subpath: string): string {
+	// 	const result = path.join(dir, subpath);
+	// 	// it seems that obsidian do not understand paths with backslashes in Windows, so turn them into forward slashes
+	// 	return normalizePath(result.replace(/\\/g, '/'));
+	// }
+	
+	private sandboxed(code:string, context:IContext) : FunctionConstructor {
+		const frame = document.createElement('iframe');
+		document.body.appendChild(frame);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const f = (frame.contentWindow as any).Function as FunctionConstructor;
+		document.body.removeChild(frame);
+		
+		
+		const restrictedKeys = [
+			...Object.keys(frame.contentWindow??{}),
+			'self',
+			'document',
+			'console'
+		];
+		const undefineds = restrictedKeys.map( v=>undefined);
+
+		return f(
+			...restrictedKeys,
+			'$',
+			"'use strict';" + code
+		)(
+			...undefineds,
+			context
+		);
+	}
+	
+
+
+}
