@@ -112,16 +112,17 @@ class DataSetRow implements IRowDataValueCollection{
 
 interface IContext{
 	data: IDataSetCollection;
-	load_data: (filepath:string, name?:string) => Promise<DataSet>;
-	templates: IContent[];
-	load_template: (filepath:string) => Promise<IContent>;
+	templates: ITemplateContent[];
 	log: (...data: unknown[]) => void;
-	render: (cb :IContent, data:object) => string;
+	render: (cb :ITemplateContent, data:object) => string;
 	output: ( file:string, content:string, open:boolean ) => void;
 	open: (linkText:string) => void;
+	load_data: (filepath:string, name?:string) => Promise<DataSet>;
+	load_template: (filepath:string) => Promise<ITemplateContent>;
+	import: (filepath:string) => void;
 }
 
-interface IContent{
+interface ITemplateContent{
 	languages:string[];
 	content:string;
 }
@@ -131,6 +132,72 @@ interface IContent{
 // }
 
 class Parser {
+
+	public applyMarkdownContent( data:IDataSetCollection, templates:ITemplateContent[], content:string ) : void {
+		const lines = content.split('\n').map( e=>e.trim().trim());
+		console.debug(lines);
+		let currentHeader = '';
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (line.startsWith('#')){
+				// header
+				currentHeader = this.extractHeader(line);
+			}else if (line.startsWith('|')){
+				// extract table
+				const tableLines: string[] = [];
+				while( i < lines.length && lines[i].startsWith('|') ){
+					const tableLine = lines[i];
+					tableLines.push(tableLine);
+					i++;
+				}
+				data[currentHeader] = this.parseAsMdTable(tableLines);
+			}else if ( line.startsWith('```html') ){
+				const templateLines: string[] = [];
+				i++;
+				while( i < lines.length && !lines[i].startsWith('```') ){
+					const templateLine = lines[i];
+					templateLines.push(templateLine);
+					i++;
+				}
+				templates.push( {content : templateLines.join('\n'), languages: ['html']} );
+			}
+		}
+	}
+
+	private extractHeader(line:string) : string{
+		//todo
+		return this.convertToTableName(line.replace('#',''));
+	}
+
+	private parseAsMdTable( tableLines:string[] ): DataSet {
+		const data: DataSet = new DataSet();
+		
+		const tlines = tableLines
+		.map( e=>e.trim().slice(1,-1).trim());
+
+		//console.debug(tableLines);
+		const columns = tlines
+			.first()?.split('|')
+			.map( e=> this.convertToColumnName(e) )
+			.filter( e=>e.length > 0)
+			?? []
+		;
+
+		for (let i = 1; i < tlines.length; i++) {
+			const rowLine = tlines[i];
+			//console.debug(line);
+			if (rowLine.startsWith('---') ){
+				continue;
+			}
+			if (rowLine.startsWith('|') && rowLine.endsWith('|')){
+				continue;
+			}
+			const rowValues : unknown[] = rowLine.split('|').map( e => this.covertFromString(e) );
+			data.push( new DataSetRow( columns, rowValues ) );
+		}
+
+		return data;
+	}
 
 	public fetchData(editor: Editor, fileCache: CachedMetadata | undefined): IDataSetCollection {
 		const result:{
@@ -160,32 +227,9 @@ class Parser {
 				const from = editor.offsetToPos(section.position.start.offset);
 				const to = editor.offsetToPos(section.position.end.offset);
 				const table = editor.getRange( from, to );
+				const tableLines = table.split('\n');
+				const data = this.parseAsMdTable(tableLines);
 
-				
-				const data: DataSet = new DataSet();
-				
-				const tableLines = table.split('\n').map( e=>e.trim().slice(1,-1).trim());
-				//console.debug(tableLines);
-				const columns = tableLines
-					.first()?.split('|')
-					.map( e=> this.convertToColumnName(e) )
-					.filter( e=>e.length > 0)
-					?? []
-				;
-
-				for (let i = 1; i < tableLines.length; i++) {
-					const rowLine = tableLines[i];
-					//console.debug(line);
-					if (rowLine.startsWith('---') ){
-						continue;
-					}
-					if (rowLine.startsWith('|') && rowLine.endsWith('|')){
-						continue;
-					}
-					const rowValues : unknown[] = rowLine.split('|').map( e => this.covertFromString(e) );
-					data.push( new DataSetRow( columns, rowValues ) );
-				}
-				
 				const tableName = this.convertToTableName(lastHeading);
 				result[tableName] = data;
 				//result.push( data );
@@ -258,8 +302,8 @@ class Parser {
 		editor: Editor,
 		fileCache: CachedMetadata | undefined,
 		languages :string[]
-	): IContent[] {
-		const result: IContent[] = [];
+	): ITemplateContent[] {
+		const result: ITemplateContent[] = [];
 		
 		if ( fileCache == undefined){
 			return result;
@@ -339,9 +383,10 @@ export class Compiler{
 		// build context
 		const context : IContext = {
 			data: data,
-			load_data: (filepath, name) => this.data_loader(data, filepath, name),
 			templates: templateBlocks,
+			load_data: (filepath, name) => this.data_loader(data, filepath, name),
 			load_template: (filepath) => this.template_loader(templateBlocks, filepath),
+			import: (filepath) => this.import( data, templateBlocks, filepath),
 			log: x => window.console.info( 'meld-build', x ),
 			render: (cb, data) =>{
 				const template = HB.compile( cb.content );
@@ -417,8 +462,8 @@ export class Compiler{
 		return resultDataSet;
 	}
 
-	private async template_loader(templates: IContent[], filepath:string) : Promise<IContent>{
-		const resultContent : IContent = { content : '', languages: [] };
+	private async template_loader(templates: ITemplateContent[], filepath:string) : Promise<ITemplateContent>{
+		const resultContent : ITemplateContent = { content : '', languages: [] };
 
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
 		if (!absFilepath){
@@ -433,6 +478,30 @@ export class Compiler{
 		
 
 		return resultContent;
+	}
+
+	private async import(data: IDataSetCollection, templates: ITemplateContent[], filepath:string) : Promise<void>{
+		//const resultContent : ITemplateContent = { content : '', languages: [] };
+
+		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
+		if (!absFilepath){
+			return;
+		}
+		const file = app.vault.getAbstractFileByPath(absFilepath);
+		if (file instanceof TFile){
+			if (file.extension == 'md'){
+				const content = await app.vault.read( file );
+				const pzr = new Parser();
+				pzr.applyMarkdownContent(data, templates, content);
+				// // copy to passed in data collection
+				// Object.keys(fileDatasets).forEach(key => {
+				// 	data[key] = fileDatasets[key];
+				// });
+				// resultContent.languages = [file.extension];
+				// templates.push(resultContent);
+			}
+		}
+		
 	}
 
 	// private template_loader(filepath:string) : ICodeBlock{
