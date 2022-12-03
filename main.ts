@@ -26,8 +26,7 @@ HB.registerHelper('format_date', function (value, options) {
     const pattern = options.hash['pattern'] as string || 'yyyy-MM-dd';
 
 	// Returns the formatted date
-	const m = moment(value);
-	return m.format(pattern);
+	return moment(value).format(pattern);
 });
 
 
@@ -83,11 +82,12 @@ export default class MyPlugin extends Plugin {
 }
 
 class DataSet extends Array<DataSetRow> {
-	columns: Array<string> = [];
+	// is this needed?
+	//columns: Array<string> = [];
 }
 
 interface IDataSetCollection {
-	[name:string] : DataSet
+	[name:string] : DataSet;
 }
 
 interface IRowDataValueCollection {
@@ -112,14 +112,16 @@ class DataSetRow implements IRowDataValueCollection{
 
 interface IContext{
 	data: IDataSetCollection;
-	templates: ICodeBlock[];
+	load_data: (filepath:string, name?:string) => Promise<DataSet>;
+	templates: IContent[];
+	load_template: (filepath:string) => Promise<IContent>;
 	log: (...data: unknown[]) => void;
-	render: (cb :ICodeBlock, data:object) => string;
+	render: (cb :IContent, data:object) => string;
 	output: ( file:string, content:string, open:boolean ) => void;
 	open: (linkText:string) => void;
 }
 
-interface ICodeBlock{
+interface IContent{
 	languages:string[];
 	content:string;
 }
@@ -164,7 +166,7 @@ class Parser {
 				
 				const tableLines = table.split('\n').map( e=>e.trim().slice(1,-1).trim());
 				//console.debug(tableLines);
-				data.columns = tableLines
+				const columns = tableLines
 					.first()?.split('|')
 					.map( e=> this.convertToColumnName(e) )
 					.filter( e=>e.length > 0)
@@ -181,7 +183,7 @@ class Parser {
 						continue;
 					}
 					const rowValues : unknown[] = rowLine.split('|').map( e => this.covertFromString(e) );
-					data.push( new DataSetRow( data.columns, rowValues ) );
+					data.push( new DataSetRow( columns, rowValues ) );
 				}
 				
 				const tableName = this.convertToTableName(lastHeading);
@@ -256,8 +258,8 @@ class Parser {
 		editor: Editor,
 		fileCache: CachedMetadata | undefined,
 		languages :string[]
-	): ICodeBlock[] {
-		const result: ICodeBlock[] = [];
+	): IContent[] {
+		const result: IContent[] = [];
 		
 		if ( fileCache == undefined){
 			return result;
@@ -289,8 +291,29 @@ class Parser {
 
 		return result;
 	}
+	
+	public loadCsv( csvdata:string ) : DataSet {
+		const lines = csvdata.split('\n').map( e=>e.trim());
+		if (lines.length == 0){
+			return new DataSet();
+		}
+		//console.debug(lines);
+		const columns = lines.first()?.split(',').map( e=> this.convertToColumnName(e) ) ?? [];
+		
+		const rows = new Array<DataSetRow>();
 
+		for (let i = 1; i < lines.length; i++) {
+			const rowData = lines[i].split(',').map( d=>this.covertFromString(d));
+			rows.push( new DataSetRow(columns, rowData));
+		}
+
+		const ds = new DataSet( ...rows );
+		//ds.columns = columns;
+		return ds;
+	}
 }
+
+
 
 export class Compiler{
 
@@ -316,7 +339,9 @@ export class Compiler{
 		// build context
 		const context : IContext = {
 			data: data,
+			load_data: (filepath, name) => this.data_loader(data, filepath, name),
 			templates: templateBlocks,
+			load_template: (filepath) => this.template_loader(templateBlocks, filepath),
 			log: x => window.console.info( 'meld-build', x ),
 			render: (cb, data) =>{
 				const template = HB.compile( cb.content );
@@ -361,6 +386,60 @@ export class Compiler{
 		return () => this.sandboxed(sourceCode, context);
 	}
 
+	private getAbsoluteFilepathFromActiveFile( path:string ) : string | undefined {
+		const activeFile = app.workspace.getActiveFile();
+		if (activeFile == null){
+			return;
+		}
+		return normalizePath( activeFile.parent.path + "/" + path );
+	}
+
+	private async data_loader(data: IDataSetCollection, filepath:string, name?:string) : Promise<DataSet>{
+		let resultDataSet = new DataSet();
+
+		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
+		if (!absFilepath){
+			return resultDataSet;
+		}
+
+		//console.debug({filepath, name, absFilepath});
+		const file = app.vault.getAbstractFileByPath(absFilepath);
+		//console.debug({file});
+		const pzr = new Parser();
+		if (file instanceof TFile){
+			if (file.extension == 'csv'){
+				const csvdata = await app.vault.read( file );
+				resultDataSet = pzr.loadCsv(csvdata);
+				data[name??file.basename] = resultDataSet;
+			}
+		}
+		
+		//console.log('loaded');
+		return resultDataSet;
+	}
+
+	private async template_loader(templates: IContent[], filepath:string) : Promise<IContent>{
+		const resultContent : IContent = { content : '', languages: [] };
+
+		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
+		if (!absFilepath){
+			return resultContent;
+		}
+		const file = app.vault.getAbstractFileByPath(absFilepath);
+		if (file instanceof TFile){
+			resultContent.content = await app.vault.read( file );
+			resultContent.languages = [file.extension];
+			templates.push(resultContent);
+		}
+		
+
+		return resultContent;
+	}
+
+	// private template_loader(filepath:string) : ICodeBlock{
+
+	// }
+
 	// pathJoin(dir: string, subpath: string): string {
 	// 	const result = path.join(dir, subpath);
 	// 	// it seems that obsidian do not understand paths with backslashes in Windows, so turn them into forward slashes
@@ -381,12 +460,13 @@ export class Compiler{
 			'document',
 			'console'
 		];
-		const undefineds = restrictedKeys.map( v=>undefined);
+		const undefineds = restrictedKeys.map( v=>undefined );
 
 		return f(
 			...restrictedKeys,
 			'$',
-			"'use strict';" + code
+			//"'use strict';" + code
+			`'use strict'; Promise.all((async () => { ${code} })());`
 		)(
 			...undefineds,
 			context
