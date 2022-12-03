@@ -1,4 +1,4 @@
-import { CachedMetadata, Editor, MarkdownView, normalizePath, Notice, Plugin, TFile } from 'obsidian';
+import { CachedMetadata, Editor, MarkdownView, moment, normalizePath, Notice, Plugin, TFile } from 'obsidian';
 //import * as Mustache from 'mustache';
 //import {render as mustacheRender} from 'mustache';
 
@@ -10,9 +10,9 @@ import { CachedMetadata, Editor, MarkdownView, normalizePath, Notice, Plugin, TF
 import * as HB from  'handlebars';
 //import path from 'path';
 
-HB.registerHelper('format', function (value, options) {
+HB.registerHelper('format_number', function (value, options) {
     // Helper parameters
-    const dp = parseInt( options.hash['decimalPlaces'] ) || 2;
+    const dp = parseInt( options.hash['decimal_places'] ) || 2;
 
 	// Parse to float
     value = parseFloat(value);
@@ -20,6 +20,16 @@ HB.registerHelper('format', function (value, options) {
     // Returns the formatted number
     return value.toFixed(dp);
 });
+
+HB.registerHelper('format_date', function (value, options) {
+    // Helper parameters
+    const pattern = options.hash['pattern'] as string || 'yyyy-MM-dd';
+
+	// Returns the formatted date
+	const m = moment(value);
+	return m.format(pattern);
+});
+
 
 interface MyPluginSettings {
 	mySetting: string;
@@ -195,6 +205,22 @@ class Parser {
 
 	}
 
+	private looksNumber( str:string ): boolean {
+		/**
+		* RegExps to test a string for a str starting with
+		*  -1234
+		*  123
+		*  12.3456
+		*  12.1
+		*  0.1
+		*  - 12
+		*  0
+		*/
+		const rxNumber = /^-?\s*(\d*)\.?(\d*)$/;
+		return rxNumber.test(str);
+
+	}
+
 	private convertToTableName( str:string ) : string {
 		return str.trim().replace(/\W/ig, '_').toLowerCase();
 	}
@@ -216,9 +242,11 @@ class Parser {
 			}
 		}
 
+		if ( this.looksNumber(trimmed) ){
 		const flt = parseFloat( trimmed );
-		if ( !isNaN(flt) ){
-			return flt;
+			if ( !isNaN(flt) ){
+				return flt;
+			}
 		}
 
 		return trimmed;
