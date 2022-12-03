@@ -358,11 +358,10 @@ export class Compiler{
 				}
 
 				//console.debug( app.vault.getAbstractFileByPath(filename) );
-				const sanFilename = normalizePath(filename)
-					.replace('/', '_')
+				const outputFilename = normalizePath(filename)
 					.replace('..', '_')
 				;
-				const outputFilename = normalizePath( `${activeFile.basename} ${sanFilename}` );
+				//const outputFilename = normalizePath( `${activeFile.basename} ${sanFilename}` );
 
 				const newFilepath = normalizePath( activeFile.parent.path + "/" + outputFilename );
 				//console.debug({outputFilename,newFilepath});
