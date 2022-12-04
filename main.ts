@@ -133,9 +133,10 @@ interface ITemplateContent{
 
 class Parser {
 
-	public applyMarkdownContent( data:IDataSetCollection, templates:ITemplateContent[], content:string ) : void {
+	public applyMarkdownContent( name:string, content:string, data:IDataSetCollection, templates:ITemplateContent[] ) : void {
 		const lines = content.split('\n').map( e=>e.trim().trim());
-		console.debug(lines);
+		//console.debug(lines);
+
 		let currentHeader = '';
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i];
@@ -150,7 +151,8 @@ class Parser {
 					tableLines.push(tableLine);
 					i++;
 				}
-				data[currentHeader] = this.parseAsMdTable(tableLines);
+				const dataPropName = this.convertToTableName( currentHeader.length > 0 ? currentHeader : name );
+				data[dataPropName] = this.parseAsMdTable(tableLines);
 			}else if ( line.startsWith('```html') ){
 				const templateLines: string[] = [];
 				i++;
@@ -492,7 +494,7 @@ export class Compiler{
 			if (file.extension == 'md'){
 				const content = await app.vault.read( file );
 				const pzr = new Parser();
-				pzr.applyMarkdownContent(data, templates, content);
+				pzr.applyMarkdownContent( file.basename, content, data, templates);
 				// // copy to passed in data collection
 				// Object.keys(fileDatasets).forEach(key => {
 				// 	data[key] = fileDatasets[key];
