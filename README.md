@@ -13,6 +13,22 @@
 -[ ] add image to uri function (then inject into template)
 
 
+## API
+```js
+// Implemented
+await $.import('somefile.md');
+$.log(...anything);
+$.data.somedata.filter();
+await $.output(path, content, open);
+// To do
+$.dataview or $.dv...
+$.notes('/path').filter( n=>n.basename == 'my note');
+const output = $.templates.first().render(data);
+// logging
+// convert image (png, jpg) to data uri
+
+```
+
 ## Dev info
 ### First time developing plugins?
 

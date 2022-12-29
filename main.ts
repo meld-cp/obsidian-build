@@ -1,4 +1,5 @@
 import { CachedMetadata, Editor, MarkdownView, moment, normalizePath, Notice, Plugin, TFile } from 'obsidian';
+import {DataviewApi, getAPI as dvGetAPI} from "obsidian-dataview";
 //import * as Mustache from 'mustache';
 //import {render as mustacheRender} from 'mustache';
 
@@ -29,6 +30,17 @@ HB.registerHelper('format_date', function (value, options) {
 	return moment(value).format(pattern);
 });
 
+HB.registerHelper('data_uri', function (value, options) {
+	//TODO
+    // Helper parameters
+    //const file = options.hash['file'] as string;
+	//const contentType = options.hash['content_type'] as string;
+
+	// check if file exists
+	// convert file to data uri
+	
+});
+
 
 interface MyPluginSettings {
 	mySetting: string;
@@ -54,10 +66,11 @@ export default class MyPlugin extends Plugin {
 		this.addCommand({
 			id: 'meld-build-run',
 			name: 'Run',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
+			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				try{
+					view.save();
 					const b = new Compiler();
-					const runner = b.compile(editor, view.file);
+					const runner = b.compile(editor, view);
 					runner();
 				}catch(e){
 					console.error(e);
@@ -110,16 +123,30 @@ class DataSetRow implements IRowDataValueCollection{
 
 }
 
-interface IContext{
+interface IContext {
 	data: IDataSetCollection;
 	templates: ITemplateContent[];
-	log: (...data: unknown[]) => void;
+
+	//current: MarkdownView;
+
+	//comp: Component;
+	//log: (...data: unknown[]) => void;
+	log: (message?: any, ...optionalParams: any[]) => void;
+	log_error: (message?: any, ...optionalParams: any[]) => void;
+
+	notice: (message: string | DocumentFragment, timeout?: number) => void;
+
 	render: (cb :ITemplateContent, data:object) => string;
-	output: ( file:string, content:string, open:boolean ) => void;
+	output: ( file:string, content:string, open?:boolean ) => void;
 	open: (linkText:string) => void;
 	load_data: (filepath:string, name?:string) => Promise<DataSet>;
 	load_template: (filepath:string) => Promise<ITemplateContent>;
 	import: (filepath:string) => void;
+
+	rebuild_view: () => void;
+
+	dv: DataviewApi | undefined;
+	dataview: DataviewApi | undefined;
 }
 
 interface ITemplateContent{
@@ -363,11 +390,12 @@ class Parser {
 
 export class Compiler{
 
-	public compile(editor: Editor, file: TFile) : () => void {
-		const fileCache = app.metadataCache.getFileCache(file);
+	public compile(editor: Editor, view: MarkdownView) : () => void {
+
+		const fileCache = app.metadataCache.getFileCache(view.file);
 
 		if (fileCache == null){
-			return () => {};
+			return async () => {};
 		}
 
 		const pzr = new Parser();
@@ -383,13 +411,26 @@ export class Compiler{
 		const templateBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['html']);
 
 		// build context
+		const dataViewApi = dvGetAPI();
+		//const comp = new Component();
+		//ma
+		//comp.addChild
 		const context : IContext = {
 			data: data,
 			templates: templateBlocks,
+
+			//current: view,
+			//comp: ,
+
 			load_data: (filepath, name) => this.data_loader(data, filepath, name),
 			load_template: (filepath) => this.template_loader(templateBlocks, filepath),
 			import: (filepath) => this.import( data, templateBlocks, filepath),
+			
 			log: x => window.console.info( 'meld-build', x ),
+			log_error: x => window.console.error( 'meld-build', x ),
+			notice: (msg, timeout) => new Notice(msg, timeout),
+			dv: dataViewApi,
+			dataview: dataViewApi,
 			render: (cb, data) =>{
 				const template = HB.compile( cb.content );
 				const result = template(data);
@@ -398,7 +439,7 @@ export class Compiler{
 			output: async (filename, content, open) =>{
 				
 				const activeFile = app.workspace.getActiveFile();
-				
+
 				//letoutputFile = normalizePath( newFileFolder.path + "/" + filename )
 				if (activeFile == null){
 					return;
@@ -418,18 +459,24 @@ export class Compiler{
 				}
 
 				await app.vault.create( newFilepath, content );
+				
+				
 			
 				new Notice(`${newFilepath} created`);
-				if (open){
+				if (open == true){
 					await app.workspace.openLinkText( newFilepath, '' );
 				}
 			},
-			open: (linktext:string) => app.workspace.openLinkText( linktext, '' )
+
+			open: (linktext:string) => app.workspace.openLinkText( linktext, '' ),
+
+			rebuild_view: async () => await (view.leaf as any).rebuildView(),
 
 		};
 
 		// return runner
-		return () => this.sandboxed(sourceCode, context);
+		return () => this.buildSandboxedRunnerFunction(sourceCode, context);
+		//return () => this.buildRunnerFunction(sourceCode, context);
 	}
 
 	private getAbsoluteFilepathFromActiveFile( path:string ) : string | undefined {
@@ -516,7 +563,46 @@ export class Compiler{
 	// 	return normalizePath(result.replace(/\\/g, '/'));
 	// }
 	
-	private sandboxed(code:string, context:IContext) : FunctionConstructor {
+	private buildRunnerFunction(code:string, context:IContext) : FunctionConstructor {
+		//const frame = document.createElement('iframe');
+		//document.body.appendChild(frame);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		//const f = window.Function;
+		//document.body.removeChild(frame);
+		
+		
+		// const restrictedKeys = [
+		// 	...Object.keys(frame.contentWindow??{}),
+		// 	'self',
+		// 	'document',
+		// 	'console'
+		// ];
+		//const undefineds = restrictedKeys.map( v=>undefined );
+
+		const errFrag = new DocumentFragment();
+		errFrag.appendText('RUNTIME ERROR\n');
+		//errFrag.c
+		//errFrag.appendText('RUNTIME ERROR\n');
+
+		const additionals = {
+			'errFrag': errFrag
+		};
+
+		return window.Function(
+			//...restrictedKeys,
+			...Object.keys(additionals),
+			'$',
+			//"'use strict';" + code
+			code
+		)(
+			//...undefineds,
+			...Object.values(additionals),
+			context
+		);
+
+	}
+
+	private buildSandboxedRunnerFunction(code:string, context:IContext) : FunctionConstructor {
 		const frame = document.createElement('iframe');
 		document.body.appendChild(frame);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -532,15 +618,65 @@ export class Compiler{
 		];
 		const undefineds = restrictedKeys.map( v=>undefined );
 
+		const errFrag = new DocumentFragment();
+		errFrag.appendText('RUNTIME ERROR\n');
+		//errFrag.c
+		//errFrag.appendText('RUNTIME ERROR\n');
+
+		const additionals = {
+			'errFrag': errFrag
+		};
+
 		return f(
 			...restrictedKeys,
+			...Object.keys(additionals),
 			'$',
 			//"'use strict';" + code
-			`'use strict'; Promise.all((async () => { ${code} })());`
+			`
+			'use strict';
+			( async () => {
+				$.log('Run Start');
+				${code}
+			} )()
+				.catch( (e) => {
+					$.log_error(e);
+					errFrag.appendText(e);
+					$.notice(errFrag);
+				})
+				.finally( () => {
+					$.log('Run End');
+				})
+			;
+			`
 		)(
 			...undefineds,
+			...Object.values(additionals),
 			context
 		);
+
+		// return f(
+		// 	...restrictedKeys,
+		// 	'$',
+		// 	//"'use strict';" + code
+		// 	`
+		// 	'use strict';
+		// 	$.log('Start');
+		// 	Promise
+		// 		.resolve(
+		// 			( async () => {
+		// 				${code}
+		// 			} )()
+		// 		)
+		// 		.catch( (e) => {
+		// 			$.log(e);
+		// 		})
+		// 	;
+		// 	$.log('End');
+		// 	`
+		// )(
+		// 	...undefineds,
+		// 	context
+		// );
 	}
 	
 
