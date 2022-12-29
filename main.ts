@@ -42,16 +42,16 @@ HB.registerHelper('data_uri', function (value, options) {
 });
 
 
-interface MyPluginSettings {
+interface MeldBuildPluginSettings {
 	mySetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: MeldBuildPluginSettings = {
 	mySetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class MeldBuildPlugin extends Plugin {
+	settings: MeldBuildPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -123,30 +123,40 @@ class DataSetRow implements IRowDataValueCollection{
 
 }
 
-interface IContext {
+
+
+type RunContext = {
+
+	sourceCode: string;
+
 	data: IDataSetCollection;
 	templates: ITemplateContent[];
 
-	//current: MarkdownView;
-
-	//comp: Component;
-	//log: (...data: unknown[]) => void;
 	log: (message?: any, ...optionalParams: any[]) => void;
-	log_error: (message?: any, ...optionalParams: any[]) => void;
-
-	notice: (message: string | DocumentFragment, timeout?: number) => void;
-
 	render: (cb :ITemplateContent, data:object) => string;
-	output: ( file:string, content:string, open?:boolean ) => void;
-	open: (linkText:string) => void;
-	load_data: (filepath:string, name?:string) => Promise<DataSet>;
-	load_template: (filepath:string) => Promise<ITemplateContent>;
-	import: (filepath:string) => void;
 
-	rebuild_view: () => void;
+	ui: UiRunContext;
+
+	io: IoRunContext;
 
 	dv: DataviewApi | undefined;
-	//dataview: DataviewApi | undefined;
+
+}
+
+type UiRunContext = {
+	notice: (message: string | DocumentFragment, timeout?: number) => void;
+	rebuild: () => void;
+}
+
+type IoRunContext = {
+	import: ( filepath:string ) => Promise<void>;
+	load: ( filepath:string ) => Promise<string|undefined>;
+	load_data: (filepath:string, name?:string) => Promise<DataSet>;
+	//load_template: (filepath:string) => Promise<ITemplateContent>;
+	load_data_url: ( filepath:string, mimetype?:string ) => Promise<string|undefined>;
+	output: ( file:string, content:string, open?:boolean ) => void;
+	open: ( link:string ) => void;
+	delete: ( filepath:string ) => void;
 }
 
 interface ITemplateContent{
@@ -388,7 +398,9 @@ class Parser {
 
 
 
-export class Compiler{
+
+
+class Compiler{
 
 	public compile(editor: Editor, view: MarkdownView) : () => void {
 
@@ -398,6 +410,19 @@ export class Compiler{
 			return async () => {};
 		}
 
+		// build context
+		const context = this.build_run_context(editor, fileCache, view);
+
+		// return runner
+		return () => this.buildSandboxedRunnerFunction(context);
+		//return () => this.buildRunnerFunction(sourceCode, context);
+	}
+
+	private build_run_context(
+		editor: Editor,
+		fileCache:CachedMetadata,
+		view: MarkdownView
+	) : RunContext {
 		const pzr = new Parser();
 		
 		// data
@@ -405,81 +430,112 @@ export class Compiler{
 
 		// code
 		const codeBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['js', 'javascript']);
-		const sourceCode = codeBlocks.map( cb => cb.content).join('\n');
 
 		// templates
 		const templateBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['html']);
 
-		// build context
-		const dataViewApi = dvGetAPI();
-		//const comp = new Component();
-		//ma
-		//comp.addChild
-		const context : IContext = {
+		return {
+			sourceCode: codeBlocks.map( cb => cb.content).join('\n'),
+
 			data: data,
 			templates: templateBlocks,
 
-			//current: view,
-			//comp: ,
-
-			load_data: (filepath, name) => this.data_loader(data, filepath, name),
-			load_template: (filepath) => this.template_loader(templateBlocks, filepath),
-			import: (filepath) => this.import( data, templateBlocks, filepath),
-			
 			log: x => window.console.info( 'meld-build', x ),
-			log_error: x => window.console.error( 'meld-build', x ),
-			notice: (msg, timeout) => new Notice(msg, timeout),
-			
-			dv: dataViewApi,
-			//dataview: dataViewApi,
 
-			render: (cb, data) =>{
+			render: (cb, data) => {
 				const template = HB.compile( cb.content );
 				const result = template(data);
 				return result;
 			},
 
-			output: async (filename, content, open) =>{
-				
-				const activeFile = app.workspace.getActiveFile();
-
-				//letoutputFile = normalizePath( newFileFolder.path + "/" + filename )
-				if (activeFile == null){
-					return;
-				}
-
-				//console.debug( app.vault.getAbstractFileByPath(filename) );
-				const outputFilename = normalizePath(filename)
-					.replace('..', '_')
-				;
-				//const outputFilename = normalizePath( `${activeFile.basename} ${sanFilename}` );
-
-				const newFilepath = normalizePath( activeFile.parent.path + "/" + outputFilename );
-				//console.debug({outputFilename,newFilepath});
-				const af = app.vault.getAbstractFileByPath(newFilepath);
-				if (af instanceof TFile){
-					await app.vault.trash(af, false);
-				}
-
-				await app.vault.create( newFilepath, content );
-				
-				
+			ui: {
+				notice: (msg, timeout) => new Notice(msg, (timeout ?? 5 ) * 1000 ),
+				rebuild: async () => await (view.leaf as any).rebuildView(),
+			},
 			
-				new Notice(`${newFilepath} created`);
-				if (open == true){
-					await app.workspace.openLinkText( newFilepath, '' );
-				}
+			io: {
+				
+				import : async (filepath) => await this.import( data, templateBlocks, filepath ),
+
+				async load(filepath):Promise<string|undefined> {
+					const af = app.vault.getAbstractFileByPath(filepath);
+
+					if (!(af instanceof TFile)){
+						return Promise.resolve(undefined);
+					}
+
+					return await app.vault.read(af)
+				},
+
+				load_data: async (filepath, name) => await this.data_loader(data, filepath, name),
+				
+				//load_template: (filepath) => this.template_loader(templateBlocks, filepath),
+	
+				async load_data_url(filepath, mimetype) : Promise<string|undefined> {
+					const af = app.vault.getAbstractFileByPath(filepath);
+					
+					if (!(af instanceof TFile)){
+						return Promise.resolve(undefined);
+					}
+
+					console.debug(af);
+					const finalMimeType = mimetype ?? {
+						'jpg':'image/jpeg',
+						'png':'image/png',
+						'gif':'image/gif',
+						'svg':'image/svg+xml',
+					}[af.extension] ?? '';
+					const content = await app.vault.read(af);
+					const buf = Buffer.from(content);
+					const base64Data = buf.toString('base64');
+					return `data:${finalMimeType};base64,${base64Data}`;
+				},
+
+				async output (filename, content, open) {
+					
+					const activeFile = app.workspace.getActiveFile();
+	
+					//letoutputFile = normalizePath( newFileFolder.path + "/" + filename )
+					if (activeFile == null){
+						return;
+					}
+	
+					//console.debug( app.vault.getAbstractFileByPath(filename) );
+					const outputFilename = normalizePath(filename)
+						.replace('..', '_')
+					;
+					//const outputFilename = normalizePath( `${activeFile.basename} ${sanFilename}` );
+	
+					const newFilepath = normalizePath( activeFile.parent.path + "/" + outputFilename );
+					//console.debug({outputFilename,newFilepath});
+					const af = app.vault.getAbstractFileByPath(newFilepath);
+					if (af instanceof TFile){
+						await app.vault.trash(af, false);
+					}
+	
+					await app.vault.create( newFilepath, content );
+				
+					new Notice(`${newFilepath} created`);
+					if (open == true){
+						await app.workspace.openLinkText( newFilepath, '' );
+					}
+				},
+
+				//open: (linktext:string) => app.workspace.openLinkText( linktext, '' ),
+				async open(link) {
+					await app.workspace.openLinkText( link, '' );
+				},
+
+				async delete(filepath) {
+					const af = app.vault.getAbstractFileByPath(filepath);
+					if (af instanceof TFile){
+						await app.vault.trash(af, false);
+					}
+				},
 			},
 
-			open: (linktext:string) => app.workspace.openLinkText( linktext, '' ),
-
-			rebuild_view: async () => await (view.leaf as any).rebuildView(),
-
-		};
-
-		// return runner
-		return () => this.buildSandboxedRunnerFunction(sourceCode, context);
-		//return () => this.buildRunnerFunction(sourceCode, context);
+			dv: dvGetAPI(),
+		}
 	}
 
 	private getAbsoluteFilepathFromActiveFile( path:string ) : string | undefined {
@@ -545,28 +601,12 @@ export class Compiler{
 				const content = await app.vault.read( file );
 				const pzr = new Parser();
 				pzr.applyMarkdownContent( file.basename, content, data, templates);
-				// // copy to passed in data collection
-				// Object.keys(fileDatasets).forEach(key => {
-				// 	data[key] = fileDatasets[key];
-				// });
-				// resultContent.languages = [file.extension];
-				// templates.push(resultContent);
 			}
 		}
 		
 	}
-
-	// private template_loader(filepath:string) : ICodeBlock{
-
-	// }
-
-	// pathJoin(dir: string, subpath: string): string {
-	// 	const result = path.join(dir, subpath);
-	// 	// it seems that obsidian do not understand paths with backslashes in Windows, so turn them into forward slashes
-	// 	return normalizePath(result.replace(/\\/g, '/'));
-	// }
 	
-	private buildRunnerFunction(code:string, context:IContext) : FunctionConstructor {
+	private buildRunnerFunction(code:string, context:RunContext) : FunctionConstructor {
 		//const frame = document.createElement('iframe');
 		//document.body.appendChild(frame);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -605,7 +645,7 @@ export class Compiler{
 
 	}
 
-	private buildSandboxedRunnerFunction(code:string, context:IContext) : FunctionConstructor {
+	private buildSandboxedRunnerFunction(context:RunContext) : FunctionConstructor {
 		const frame = document.createElement('iframe');
 		document.body.appendChild(frame);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -616,15 +656,12 @@ export class Compiler{
 		const restrictedKeys = [
 			...Object.keys(frame.contentWindow??{}),
 			'self',
-			'document',
-			'console'
+			'document'
 		];
 		const undefineds = restrictedKeys.map( v=>undefined );
 
 		const errFrag = new DocumentFragment();
 		errFrag.appendText('RUNTIME ERROR\n');
-		//errFrag.c
-		//errFrag.appendText('RUNTIME ERROR\n');
 
 		const additionals = {
 			'errFrag': errFrag
@@ -639,7 +676,7 @@ export class Compiler{
 			'use strict';
 			( async () => {
 				$.log('Run Start');
-				${code}
+				${context.sourceCode}
 			} )()
 				.catch( (e) => {
 					$.log_error(e);
@@ -657,29 +694,6 @@ export class Compiler{
 			context
 		);
 
-		// return f(
-		// 	...restrictedKeys,
-		// 	'$',
-		// 	//"'use strict';" + code
-		// 	`
-		// 	'use strict';
-		// 	$.log('Start');
-		// 	Promise
-		// 		.resolve(
-		// 			( async () => {
-		// 				${code}
-		// 			} )()
-		// 		)
-		// 		.catch( (e) => {
-		// 			$.log(e);
-		// 		})
-		// 	;
-		// 	$.log('End');
-		// 	`
-		// )(
-		// 	...undefineds,
-		// 	context
-		// );
 	}
 	
 
