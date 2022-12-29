@@ -68,7 +68,7 @@ export default class MyPlugin extends Plugin {
 			name: 'Run',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				try{
-					view.save();
+					await view.save();
 					const b = new Compiler();
 					const runner = b.compile(editor, view);
 					runner();
@@ -146,7 +146,7 @@ interface IContext {
 	rebuild_view: () => void;
 
 	dv: DataviewApi | undefined;
-	dataview: DataviewApi | undefined;
+	//dataview: DataviewApi | undefined;
 }
 
 interface ITemplateContent{
@@ -429,13 +429,16 @@ export class Compiler{
 			log: x => window.console.info( 'meld-build', x ),
 			log_error: x => window.console.error( 'meld-build', x ),
 			notice: (msg, timeout) => new Notice(msg, timeout),
+			
 			dv: dataViewApi,
-			dataview: dataViewApi,
+			//dataview: dataViewApi,
+
 			render: (cb, data) =>{
 				const template = HB.compile( cb.content );
 				const result = template(data);
 				return result;
 			},
+
 			output: async (filename, content, open) =>{
 				
 				const activeFile = app.workspace.getActiveFile();
