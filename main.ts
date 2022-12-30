@@ -1,19 +1,10 @@
 import { CachedMetadata, Editor, MarkdownView, moment, normalizePath, Notice, Plugin, TFile } from 'obsidian';
 import {DataviewApi, getAPI as dvGetAPI} from "obsidian-dataview";
-//import * as Mustache from 'mustache';
-//import {render as mustacheRender} from 'mustache';
-
-//const  = ( (MustacheNs as any).default as MustacheNs);
-// TODO Remember to rename these classes and interfaces!
-//import Mustache = require('mustache');
-//import * as MustacheNs from 'mustache'
-//import {render} from 'mustache'
 import * as HB from  'handlebars';
-//import path from 'path';
 
 HB.registerHelper('format_number', function (value, options) {
     // Helper parameters
-    const dp = parseInt( options.hash['decimal_places'] ) || 2;
+    const dp = parseInt( options.hash['decimal_places'] ) || parseInt( options.hash['dp'] ) || 2;
 
 	// Parse to float
     value = parseFloat(value);
@@ -30,7 +21,7 @@ HB.registerHelper('format_date', function (value, options) {
 	return moment(value).format(pattern);
 });
 
-HB.registerHelper('data_uri', function (value, options) {
+//HB.registerHelper('data_uri', function (value, options) {
 	//TODO
     // Helper parameters
     //const file = options.hash['file'] as string;
@@ -39,7 +30,7 @@ HB.registerHelper('data_uri', function (value, options) {
 	// check if file exists
 	// convert file to data uri
 	
-});
+//});
 
 
 interface MeldBuildPluginSettings {
@@ -67,14 +58,14 @@ export default class MeldBuildPlugin extends Plugin {
 			id: 'meld-build-run',
 			name: 'Run',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
+				const logger = new Logger();
 				try{
-					await view.save();
-					const b = new Compiler();
-					const runner = b.compile(editor, view);
+					//await view.save();
+					const compiler = new Compiler();
+					const runner = compiler.compile(logger, editor, view);
 					runner();
 				}catch(e){
-					console.error(e);
-					new Notice(e);
+					logger.error(e)
 				}
 			}
 		});
@@ -125,43 +116,49 @@ class DataSetRow implements IRowDataValueCollection{
 
 
 
-type RunContext = {
+type TRunContext = {
 
 	sourceCode: string;
 
 	data: IDataSetCollection;
-	templates: ITemplateContent[];
+	templates: TemplateContent[];
 
-	log: (message?: any, ...optionalParams: any[]) => void;
-	render: (cb :ITemplateContent, data:object) => string;
+	logger: Logger,
+	log: (...params: any[]) => Promise<void>;
+	render: (template:any, data:object) => string;
 
-	ui: UiRunContext;
+	ui: TUiRunContext;
 
-	io: IoRunContext;
+	io: TIoRunContext;
 
 	dv: DataviewApi | undefined;
 
 }
 
-type UiRunContext = {
+type TUiRunContext = {
 	notice: (message: string | DocumentFragment, timeout?: number) => void;
 	rebuild: () => void;
 }
 
-type IoRunContext = {
-	import: ( filepath:string ) => Promise<void>;
-	load: ( filepath:string ) => Promise<string|undefined>;
-	load_data: (filepath:string, name?:string) => Promise<DataSet>;
+type TIoRunContext = {
+	import: ( path:string ) => Promise<boolean>;
+	load: ( path:string ) => Promise<string|undefined>;
+	load_data: (path:string, name?:string) => Promise<DataSet>;
 	//load_template: (filepath:string) => Promise<ITemplateContent>;
-	load_data_url: ( filepath:string, mimetype?:string ) => Promise<string|undefined>;
+	load_data_url: ( path:string, mimetype?:string ) => Promise<string|undefined>;
 	output: ( file:string, content:string, open?:boolean ) => void;
-	open: ( link:string ) => void;
-	delete: ( filepath:string ) => void;
+	open: ( linktext:string ) => void;
+	delete: ( path:string ) => void;
 }
 
-interface ITemplateContent{
+class TemplateContent {
 	languages:string[];
 	content:string;
+
+	constructor( langs: string[], content:string ){
+		this.languages = langs;
+		this.content = content;
+	}
 }
 
 // interface ITemplateBuilder{
@@ -170,7 +167,7 @@ interface ITemplateContent{
 
 class Parser {
 
-	public applyMarkdownContent( name:string, content:string, data:IDataSetCollection, templates:ITemplateContent[] ) : void {
+	public applyMarkdownContent( name:string, content:string, data:IDataSetCollection, templates:TemplateContent[] ) : void {
 		const lines = content.split('\n').map( e=>e.trim().trim());
 		//console.debug(lines);
 
@@ -341,10 +338,10 @@ class Parser {
 		editor: Editor,
 		fileCache: CachedMetadata | undefined,
 		languages :string[]
-	): ITemplateContent[] {
-		const result: ITemplateContent[] = [];
+	): TemplateContent[] {
+		const result: TemplateContent[] = [];
 		
-		if ( fileCache == undefined){
+		if ( fileCache == undefined ){
 			return result;
 		}
 
@@ -369,7 +366,7 @@ class Parser {
 			}
 			// remove first and last lines
 			lines = lines.slice(1,-1)
-			result.push( { languages, content: lines.join('\n') } );
+			result.push( new TemplateContent( languages, lines.join('\n') ) );
 		});
 
 		return result;
@@ -396,13 +393,123 @@ class Parser {
 	}
 }
 
+class Utils{
 
+	public static getSameFolderFilepath(
+		filename: string,
+		siblingFile?:TFile
+	): string{
+		const baseFile = siblingFile ?? app.workspace.getActiveFile();
+		let parentPath = baseFile?.parent.path ?? app.vault.getRoot().path;
+
+		if (!parentPath.endsWith('/')){
+			parentPath += '/'
+		}
+
+		const finalFilename = normalizePath(filename)
+			.replace('..', '_')
+		;
+
+		return normalizePath( parentPath + finalFilename );
+	}
+
+}
+
+class Logger {
+
+	private file: TFile|undefined;
+
+	private console_info( ...params: any[] ){
+		window.console.info( 'meld-build', ...params );
+	}
+
+	private console_error( ...params: any[] ){
+		window.console.error( 'meld-build', ...params );
+	}
+
+	private async file_log( prefix:string, ...params: any[] ){
+		if (!this.file){
+			return;
+		}
+		if ( params.length == 0 ){
+			return;
+		}
+
+		let content = '';
+		let isJson = false;
+		if (
+			params.length == 1
+			&& typeof(params[0]) != 'object'
+			&& typeof(params[0]) != 'function'
+			&& typeof(params[0]) != 'symbol'
+		){
+			content = params[0].toString();
+		}else{
+			isJson = true;
+			content = JSON.stringify(params, null, '  ');
+		}
+
+		//console.debug({params, content});
+
+		const fmtPrefix = prefix.length > 0 ? ` [${prefix}] ` : '';
+
+		let logLine: string;
+		if ( isJson ){
+			logLine = '```json\n'
+				+ fmtPrefix.trim() + '\n'
+				+ content + '\n```'
+			;
+		} else if (content.contains('\n')){
+			// multiline
+			logLine = '```\n' + fmtPrefix + content + '\n```';
+		}else{
+			// single line
+			logLine = '`' + (fmtPrefix + content).trim() + '`';
+		}
+
+		logLine += '\n';
+
+		await app.vault.append( this.file, logLine );
+		
+	}
+
+	public async set_file( filename: string|undefined, clear = true ){
+		if ( !filename ){
+			this.file = undefined;
+			return;
+		}
+
+		const filepath = Utils.getSameFolderFilepath(filename);
+		//console.debug({filepath});
+
+		const af = app.vault.getAbstractFileByPath(filepath);
+		if ( af instanceof TFile ){
+			this.file = af;
+			if ( clear == true ){
+				app.vault.modify( this.file, '' );
+			}
+		}else{
+			this.file = await app.vault.create( filepath, '' );
+		}
+	}
+
+	public async info( ...params: any[] ): Promise<void>{
+		this.console_info( ...params );
+		await this.file_log( 'info', ...params );
+	}
+
+	public async error( ...params: any[] ): Promise<void>{
+		this.console_error( ...params );
+		await this.file_log( 'error', ...params );
+	}
+
+}
 
 
 
 class Compiler{
 
-	public compile(editor: Editor, view: MarkdownView) : () => void {
+	public compile( logger: Logger, editor: Editor, view: MarkdownView ) : () => void {
 
 		const fileCache = app.metadataCache.getFileCache(view.file);
 
@@ -411,7 +518,7 @@ class Compiler{
 		}
 
 		// build context
-		const context = this.build_run_context(editor, fileCache, view);
+		const context = this.build_run_context(logger, editor, fileCache, view);
 
 		// return runner
 		return () => this.buildSandboxedRunnerFunction(context);
@@ -419,10 +526,11 @@ class Compiler{
 	}
 
 	private build_run_context(
+		log: Logger,
 		editor: Editor,
 		fileCache:CachedMetadata,
 		view: MarkdownView
-	) : RunContext {
+	) : TRunContext {
 		const pzr = new Parser();
 		
 		// data
@@ -440,26 +548,40 @@ class Compiler{
 			data: data,
 			templates: templateBlocks,
 
-			log: x => window.console.info( 'meld-build', x ),
+			logger : log,
+			log: async (...x) => await log.info( ...x ),
 
-			render: (cb, data) => {
-				const template = HB.compile( cb.content );
-				const result = template(data);
+			render( template, data ) {
+				const type = typeof template;
+				//console.debug({type});
+				let templateContent : string;
+				if ( type == 'object' && Object.keys(template).contains('content') ){
+					templateContent = template.content;
+				}else if ( type == 'string' ){
+					templateContent = template;
+				}else{
+					log.error( 'render::unknown template type', template, type );
+					return '';
+				}
+				const templateBuilder = HB.compile( templateContent );
+				const result = templateBuilder(data);
 				return result;
 			},
 
 			ui: {
-				notice: (msg, timeout) => new Notice(msg, (timeout ?? 5 ) * 1000 ),
+				notice: (msg, timeout) => new Notice( msg, ( timeout ?? 5 ) * 1000 ),
 				rebuild: async () => await (view.leaf as any).rebuildView(),
 			},
 			
 			io: {
 				
-				import : async (filepath) => await this.import( data, templateBlocks, filepath ),
+				import : async (filepath) => await this.import(log, data, templateBlocks, filepath ),
 
-				async load(filepath):Promise<string|undefined> {
+				async load(path):Promise<string|undefined> {
+					const filepath = Utils.getSameFolderFilepath(path);
+					
 					const af = app.vault.getAbstractFileByPath(filepath);
-
+					
 					if (!(af instanceof TFile)){
 						return Promise.resolve(undefined);
 					}
@@ -471,14 +593,15 @@ class Compiler{
 				
 				//load_template: (filepath) => this.template_loader(templateBlocks, filepath),
 	
-				async load_data_url(filepath, mimetype) : Promise<string|undefined> {
+				async load_data_url(path, mimetype) : Promise<string|undefined> {
+					const filepath = Utils.getSameFolderFilepath(path);
+					
 					const af = app.vault.getAbstractFileByPath(filepath);
 					
 					if (!(af instanceof TFile)){
 						return Promise.resolve(undefined);
 					}
 
-					console.debug(af);
 					const finalMimeType = mimetype ?? {
 						'jpg':'image/jpeg',
 						'png':'image/png',
@@ -492,22 +615,9 @@ class Compiler{
 				},
 
 				async output (filename, content, open) {
-					
-					const activeFile = app.workspace.getActiveFile();
-	
-					//letoutputFile = normalizePath( newFileFolder.path + "/" + filename )
-					if (activeFile == null){
-						return;
-					}
-	
-					//console.debug( app.vault.getAbstractFileByPath(filename) );
-					const outputFilename = normalizePath(filename)
-						.replace('..', '_')
-					;
-					//const outputFilename = normalizePath( `${activeFile.basename} ${sanFilename}` );
-	
-					const newFilepath = normalizePath( activeFile.parent.path + "/" + outputFilename );
-					//console.debug({outputFilename,newFilepath});
+
+					const newFilepath = Utils.getSameFolderFilepath(filename);
+				
 					const af = app.vault.getAbstractFileByPath(newFilepath);
 					if (af instanceof TFile){
 						await app.vault.trash(af, false);
@@ -515,18 +625,18 @@ class Compiler{
 	
 					await app.vault.create( newFilepath, content );
 				
-					new Notice(`${newFilepath} created`);
+					//new Notice(`${newFilepath} created`);
 					if (open == true){
 						await app.workspace.openLinkText( newFilepath, '' );
 					}
 				},
 
-				//open: (linktext:string) => app.workspace.openLinkText( linktext, '' ),
-				async open(link) {
-					await app.workspace.openLinkText( link, '' );
+				async open( linktext ) {
+					await app.workspace.openLinkText( linktext, '' );
 				},
 
-				async delete(filepath) {
+				async delete(path) {
+					const filepath = Utils.getSameFolderFilepath(path);
 					const af = app.vault.getAbstractFileByPath(filepath);
 					if (af instanceof TFile){
 						await app.vault.trash(af, false);
@@ -570,8 +680,8 @@ class Compiler{
 		return resultDataSet;
 	}
 
-	private async template_loader(templates: ITemplateContent[], filepath:string) : Promise<ITemplateContent>{
-		const resultContent : ITemplateContent = { content : '', languages: [] };
+	private async template_loader(templates: TemplateContent[], filepath:string) : Promise<TemplateContent>{
+		const resultContent : TemplateContent = { content : '', languages: [] };
 
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
 		if (!absFilepath){
@@ -588,25 +698,39 @@ class Compiler{
 		return resultContent;
 	}
 
-	private async import(data: IDataSetCollection, templates: ITemplateContent[], filepath:string) : Promise<void>{
-		//const resultContent : ITemplateContent = { content : '', languages: [] };
+	private async import(
+		log: Logger,
+		data: IDataSetCollection,
+		templates: TemplateContent[],
+		path:string
+	) : Promise<boolean>{
 
-		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
+		const absFilepath = this.getAbsoluteFilepathFromActiveFile(path);
 		if (!absFilepath){
-			return;
+			log.error(`import::Unable to get file path from active file: "${path}"`);
+			return false;
 		}
+
 		const file = app.vault.getAbstractFileByPath(absFilepath);
-		if (file instanceof TFile){
-			if (file.extension == 'md'){
-				const content = await app.vault.read( file );
-				const pzr = new Parser();
-				pzr.applyMarkdownContent( file.basename, content, data, templates);
-			}
-		}
 		
+		if (!(file instanceof TFile)){
+			log.error(`import::File not found: "${path}"`);
+			return false;
+		}
+
+		if ( file.extension == 'md' ){
+			const content = await app.vault.read( file );
+			const pzr = new Parser();
+			pzr.applyMarkdownContent( file.basename, content, data, templates);
+			return true;
+		}else{
+			log.error(`import::Unimplemented file extension: "${path}"`);
+			return false;
+		}
+			
 	}
 	
-	private buildRunnerFunction(code:string, context:RunContext) : FunctionConstructor {
+	private buildRunnerFunction(code:string, context:TRunContext) : FunctionConstructor {
 		//const frame = document.createElement('iframe');
 		//document.body.appendChild(frame);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -645,7 +769,7 @@ class Compiler{
 
 	}
 
-	private buildSandboxedRunnerFunction(context:RunContext) : FunctionConstructor {
+	private buildSandboxedRunnerFunction(context:TRunContext) : FunctionConstructor {
 		const frame = document.createElement('iframe');
 		document.body.appendChild(frame);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -671,20 +795,15 @@ class Compiler{
 			...restrictedKeys,
 			...Object.keys(additionals),
 			'$',
-			//"'use strict';" + code
 			`
 			'use strict';
 			( async () => {
-				$.log('Run Start');
 				${context.sourceCode}
 			} )()
 				.catch( (e) => {
-					$.log_error(e);
 					errFrag.appendText(e);
-					$.notice(errFrag);
-				})
-				.finally( () => {
-					$.log('Run End');
+					$.logger.error(e);
+					$.ui.notice(errFrag);
 				})
 			;
 			`
