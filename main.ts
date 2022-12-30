@@ -121,11 +121,11 @@ type TRunContext = {
 	sourceCode: string;
 
 	data: IDataSetCollection;
-	templates: TemplateContent[];
+	templates: string[];
 
 	logger: Logger,
 	log: (...params: any[]) => Promise<void>;
-	render: (template:any, data:object) => string;
+	render: ( template:string, data:any ) => string;
 
 	ui: TUiRunContext;
 
@@ -144,30 +144,15 @@ type TIoRunContext = {
 	import: ( path:string ) => Promise<boolean>;
 	load: ( path:string ) => Promise<string|undefined>;
 	load_data: (path:string, name?:string) => Promise<DataSet>;
-	//load_template: (filepath:string) => Promise<ITemplateContent>;
 	load_data_url: ( path:string, mimetype?:string ) => Promise<string|undefined>;
 	output: ( file:string, content:string, open?:boolean ) => void;
 	open: ( linktext:string ) => void;
 	delete: ( path:string ) => void;
 }
 
-class TemplateContent {
-	languages:string[];
-	content:string;
-
-	constructor( langs: string[], content:string ){
-		this.languages = langs;
-		this.content = content;
-	}
-}
-
-// interface ITemplateBuilder{
-// 	build: () => string;
-// }
-
 class Parser {
 
-	public applyMarkdownContent( name:string, content:string, data:IDataSetCollection, templates:TemplateContent[] ) : void {
+	public applyMarkdownContent( name:string, content:string, data:IDataSetCollection, templates:string[] ) : void {
 		const lines = content.split('\n').map( e=>e.trim().trim());
 		//console.debug(lines);
 
@@ -195,7 +180,7 @@ class Parser {
 					templateLines.push(templateLine);
 					i++;
 				}
-				templates.push( {content : templateLines.join('\n'), languages: ['html']} );
+				templates.push( templateLines.join('\n') );
 			}
 		}
 	}
@@ -338,8 +323,8 @@ class Parser {
 		editor: Editor,
 		fileCache: CachedMetadata | undefined,
 		languages :string[]
-	): TemplateContent[] {
-		const result: TemplateContent[] = [];
+	): string[] {
+		const result: string[] = [];
 		
 		if ( fileCache == undefined ){
 			return result;
@@ -366,7 +351,7 @@ class Parser {
 			}
 			// remove first and last lines
 			lines = lines.slice(1,-1)
-			result.push( new TemplateContent( languages, lines.join('\n') ) );
+			result.push( lines.join('\n') );
 		});
 
 		return result;
@@ -449,8 +434,6 @@ class Logger {
 			content = JSON.stringify(params, null, '  ');
 		}
 
-		//console.debug({params, content});
-
 		const fmtPrefix = prefix.length > 0 ? ` [${prefix}] ` : '';
 
 		let logLine: string;
@@ -480,7 +463,6 @@ class Logger {
 		}
 
 		const filepath = Utils.getSameFolderFilepath(filename);
-		//console.debug({filepath});
 
 		const af = app.vault.getAbstractFileByPath(filepath);
 		if ( af instanceof TFile ){
@@ -543,7 +525,7 @@ class Compiler{
 		const templateBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['html']);
 
 		return {
-			sourceCode: codeBlocks.map( cb => cb.content).join('\n'),
+			sourceCode: codeBlocks.join('\n'),
 
 			data: data,
 			templates: templateBlocks,
@@ -552,18 +534,7 @@ class Compiler{
 			log: async (...x) => await log.info( ...x ),
 
 			render( template, data ) {
-				const type = typeof template;
-				//console.debug({type});
-				let templateContent : string;
-				if ( type == 'object' && Object.keys(template).contains('content') ){
-					templateContent = template.content;
-				}else if ( type == 'string' ){
-					templateContent = template;
-				}else{
-					log.error( 'render::unknown template type', template, type );
-					return '';
-				}
-				const templateBuilder = HB.compile( templateContent );
+				const templateBuilder = HB.compile( template );
 				const result = templateBuilder(data);
 				return result;
 			},
@@ -680,8 +651,8 @@ class Compiler{
 		return resultDataSet;
 	}
 
-	private async template_loader(templates: TemplateContent[], filepath:string) : Promise<TemplateContent>{
-		const resultContent : TemplateContent = { content : '', languages: [] };
+	private async template_loader(templates: string[], filepath:string) : Promise<string>{
+		let resultContent = '';
 
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
 		if (!absFilepath){
@@ -689,8 +660,7 @@ class Compiler{
 		}
 		const file = app.vault.getAbstractFileByPath(absFilepath);
 		if (file instanceof TFile){
-			resultContent.content = await app.vault.read( file );
-			resultContent.languages = [file.extension];
+			resultContent = await app.vault.read( file );
 			templates.push(resultContent);
 		}
 		
@@ -701,7 +671,7 @@ class Compiler{
 	private async import(
 		log: Logger,
 		data: IDataSetCollection,
-		templates: TemplateContent[],
+		templates: string[],
 		path:string
 	) : Promise<boolean>{
 
