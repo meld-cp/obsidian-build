@@ -86,7 +86,7 @@ export default class MeldBuildPlugin extends Plugin {
 }
 
 class DataSet extends Array<DataSetRow> {
-	// is this needed?
+	// TODO: is this needed?
 	//columns: Array<string> = [];
 }
 
@@ -124,8 +124,8 @@ type TRunContext = {
 	templates: string[];
 
 	logger: Logger,
-	log: (...params: any[]) => Promise<void>;
-	render: ( template:string, data:any ) => string;
+	log( ...params: any[] ) : Promise<void>;
+	render( template:string, data:any ) : string;
 
 	ui: TUiRunContext;
 
@@ -136,23 +136,30 @@ type TRunContext = {
 }
 
 type TUiRunContext = {
-	notice: (message: string | DocumentFragment, timeout?: number) => void;
-	rebuild: () => void;
+	notice( message: string | DocumentFragment, timeout?: number ) : void;
+	rebuild() : Promise<void>;
+	message( text:string ) : Promise<void>;
+	ask( question:string, answers?: string[] ) : Promise<string>;
 }
 
 type TIoRunContext = {
-	import: ( path:string ) => Promise<boolean>;
-	load: ( path:string ) => Promise<string|undefined>;
-	load_data: (path:string, name?:string) => Promise<DataSet>;
-	load_data_url: ( path:string, mimetype?:string ) => Promise<string|undefined>;
-	output: ( file:string, content:string, open?:boolean ) => void;
-	open: ( linktext:string ) => void;
-	delete: ( path:string ) => void;
+	import( path:string ) : Promise<boolean>;
+	load( path:string ) : Promise<string|undefined>;
+	load_data( path:string, name?:string ) : Promise<DataSet>;
+	load_data_url( path:string, mimetype?:string ) : Promise<string|undefined>;
+	output( file:string, content:string, open?:boolean ) : void;
+	open( linktext:string ) : void;
+	delete( path:string ) : void;
 }
 
 class Parser {
 
-	public applyMarkdownContent( name:string, content:string, data:IDataSetCollection, templates:string[] ) : void {
+	public applyMarkdownContent(
+		name:string,
+		content:string,
+		data:IDataSetCollection,
+		templates:string[]
+	) : void {
 		const lines = content.split('\n').map( e=>e.trim().trim());
 		//console.debug(lines);
 
@@ -186,7 +193,6 @@ class Parser {
 	}
 
 	private extractHeader(line:string) : string{
-		//todo
 		return this.convertToTableName(line.replace('#',''));
 	}
 
@@ -236,14 +242,14 @@ class Parser {
 
 		let headingIdx = -1;
 		let lastHeading = '';
-		for (let i = 0; i < fileCache.sections.length; i++) {
+		for ( let i = 0; i < fileCache.sections.length; i++ ) {
 			const section = fileCache.sections[i];
-			if (section.type == 'heading' ){
+			if ( section.type == 'heading' ){
 				headingIdx++;
 				lastHeading = fileCache.headings?.at(headingIdx)?.heading ?? '?';
 				//console.debug({lastHeading});
 			} 
-			if (section.type == 'table' ){
+			if ( section.type == 'table' ){
 
 				const from = editor.offsetToPos(section.position.start.offset);
 				const to = editor.offsetToPos(section.position.end.offset);
@@ -334,7 +340,7 @@ class Parser {
 			return result;
 		}
 		
-		fileCache.sections.forEach(section => {
+		fileCache.sections.forEach( section => {
 			if (section.type != 'code'){
 				return;
 			}
@@ -540,8 +546,19 @@ class Compiler{
 			},
 
 			ui: {
-				notice: (msg, timeout) => new Notice( msg, ( timeout ?? 5 ) * 1000 ),
-				rebuild: async () => await (view.leaf as any).rebuildView(),
+				notice(msg, timeout) {
+					new Notice( msg, ( timeout ?? 5 ) * 1000 );
+				},
+				async rebuild() {
+					await (view.leaf as any).rebuildView();
+				},
+				async message( text:string ) {
+					//todo
+				},
+				async ask( question:string, answers?:string[] ) : Promise<string> {
+					//todo
+					return '';
+				}
 			},
 			
 			io: {
