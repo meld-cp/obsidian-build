@@ -1,6 +1,9 @@
 import { CachedMetadata, Editor, MarkdownView, moment, normalizePath, Notice, Plugin, TFile } from 'obsidian';
 import {DataviewApi, getAPI as dvGetAPI} from "obsidian-dataview";
 import * as HB from  'handlebars';
+import { MessageModal } from 'modal-message';
+import { AskModal } from 'modal-ask';
+import { Utils } from 'utils';
 
 HB.registerHelper('format_number', function (value, options) {
     // Helper parameters
@@ -384,27 +387,7 @@ class Parser {
 	}
 }
 
-class Utils{
 
-	public static getSameFolderFilepath(
-		filename: string,
-		siblingFile?:TFile
-	): string{
-		const baseFile = siblingFile ?? app.workspace.getActiveFile();
-		let parentPath = baseFile?.parent.path ?? app.vault.getRoot().path;
-
-		if (!parentPath.endsWith('/')){
-			parentPath += '/'
-		}
-
-		const finalFilename = normalizePath(filename)
-			.replace('..', '_')
-		;
-
-		return normalizePath( parentPath + finalFilename );
-	}
-
-}
 
 class Logger {
 
@@ -549,15 +532,22 @@ class Compiler{
 				notice(msg, timeout) {
 					new Notice( msg, ( timeout ?? 5 ) * 1000 );
 				},
+
 				async rebuild() {
 					await (view.leaf as any).rebuildView();
 				},
-				async message( text:string ) {
-					//todo
+
+				async message( text:string ) : Promise<void> {
+					const m = new MessageModal(app);
+					await m.execute(text);
+					console.log('message, after open');
 				},
+
 				async ask( question:string, answers?:string[] ) : Promise<string> {
-					//todo
-					return '';
+					const m = new AskModal(app);
+					await m.execute(question, answers);
+					console.log('ask, after open');
+					return m.answer;
 				}
 			},
 			
