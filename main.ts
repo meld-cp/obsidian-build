@@ -141,8 +141,12 @@ type TRunContext = {
 type TUiRunContext = {
 	notice( message: string | DocumentFragment, timeout?: number ) : void;
 	rebuild() : Promise<void>;
-	message( text:string ) : Promise<void>;
-	ask( question:string, answers?: string[] ) : Promise<string>;
+	message( titleOrMessage:string, message?:string ) : Promise<void>;
+	ask(
+		titleOrQuestion:string,
+		questionOrOptions?:string|string[],
+		options?:string[]
+	) : Promise<string|undefined>;
 }
 
 type TIoRunContext = {
@@ -537,16 +541,56 @@ class Compiler{
 					await (view.leaf as any).rebuildView();
 				},
 
-				async message( text:string ) : Promise<void> {
+				async message( titleOrMessage:string, message?:string  ) : Promise<void> {
 					const m = new MessageModal(app);
-					await m.execute(text);
-					console.log('message, after open');
+
+					let title: string;
+					let msg: string;
+					if (message == undefined){
+						msg = titleOrMessage;
+						title = '';
+					}else{
+						title = titleOrMessage;
+						msg = message;
+					}
+
+					await m.execute(title, msg);
+					//console.log('message, after open');
 				},
 
-				async ask( question:string, answers?:string[] ) : Promise<string> {
+				async ask(
+					titleOrQuestion:string,
+					questionOrOptions?:string|string[],
+					options?:string[]
+				) : Promise<string|undefined> {
+					console.log({titleOrQuestion, questionOrOptions, options});
 					const m = new AskModal(app);
-					await m.execute(question, answers);
-					console.log('ask, after open');
+
+					let finTitle: string;
+					let finQuestion: string;
+					let finOptions: string[];
+
+					if ( questionOrOptions != undefined ){
+						if ( typeof questionOrOptions == 'string' ){
+							finTitle = titleOrQuestion;
+							finQuestion = questionOrOptions;
+							finOptions = options ?? [];
+						}else {
+							finTitle = '';
+							finQuestion = titleOrQuestion;
+							finOptions = questionOrOptions ?? [];
+						}
+					} else {
+						finTitle = '';
+						finQuestion = titleOrQuestion;
+						finOptions = [];
+					}
+
+					await m.execute(
+						finTitle,
+						finQuestion,
+						finOptions
+					);
 					return m.answer;
 				}
 			},

@@ -10,7 +10,12 @@ export class MessageModal extends Modal {
 		super(app);
 	}
 	
-	public async execute( message:string ) : Promise<void>{
+	public async execute(
+		title:string,
+		message:string
+	) : Promise<void>{
+		
+		this.titleEl.setText( title );
 		
 		this.message = message;
 		this.closed = false;
@@ -25,7 +30,8 @@ export class MessageModal extends Modal {
 
 	onOpen() {
 		const { contentEl } = this;
-		contentEl.setText(this.message);
+		const formattedLines = this.message.split('\n').join('<br/>');
+		contentEl.innerHTML = formattedLines;
 	}
   
 	onClose() {

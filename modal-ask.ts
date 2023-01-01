@@ -5,46 +5,87 @@ export class AskModal extends Modal {
 
 	private question:string;
 	private options:string[] = [];
-	private sOptions:Setting;
-	public answer:string;
-	private closed = true;
+	private answerInput:Setting;
+	public answer:string|undefined;
+	private completed = true;
+	//private cancelled = false;
 
 	constructor(app: App) {
 		super(app);
 	}
 
-	public async execute( question:string, options?:string[] ) : Promise<string|undefined>{
+	public async execute(
+		title:string|undefined,
+		question:string,
+		options:string[],
+	) : Promise<string|undefined>{
 		
+		this.titleEl.setText( `❓ ${title}`.trim() );
+
 		this.question = question;
+		this.answer = undefined;
 		this.options = options ?? [];
 
-		this.closed = false;
+		this.completed = false;
 		
 		this.open();
 		
-		while(!this.closed){
+		while(!this.completed){
 			await Utils.delay(250);
 		}
 
-		return Promise.resolve( undefined );
+		return this.answer;
 	}
 
 	override onOpen() {
 		const { contentEl } = this;
-		contentEl.setText( this.question );
+		
+		let answer:string|undefined = undefined;
+		
+		this.answerInput = new Setting(contentEl).setName( this.question );
+
 		if ( this.options.length > 0 ){
-			this.sOptions = new Setting(contentEl);
-			this.sOptions.addDropdown( cb=>{
+			this.answerInput.addDropdown( cb=>{
+				cb.addOption( '', '' ).onChange((v)=>answer = undefined);
+				
 				this.options.forEach( o => {
-					cb.addOption( o, o ).onChange((v)=>this.answer = v);
+					cb.addOption( o, o ).onChange((v)=>answer = v);
 				})
 			} );
+		}else{
+			this.answerInput.addText( cb=>{
+				cb
+					.onChange( v=> answer = v )
+					.inputEl.on('keypress','*', ev=>{
+						if (ev.key == 'Enter'){
+							ev.stopPropagation();
+							ev.preventDefault();
+							this.answer = answer;
+							this.close();
+						}
+						//console.log(ev);
+					})
+				;
+			});
 		}
+
+		// OK button
+		new Setting(contentEl)
+			.addButton(cb =>{
+				cb
+					.setButtonText('OK')
+					.onClick( ev => {
+						this.answer = answer;
+						this.close();
+					})
+				;
+			})
+		;
 	}
   
 	override onClose() {
 		const { contentEl } = this;
-		this.closed = true;
+		this.completed = true;
 		contentEl.empty();
 	}
   }
