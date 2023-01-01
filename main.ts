@@ -141,7 +141,10 @@ type TRunContext = {
 type TUiRunContext = {
 	notice( message: string | DocumentFragment, timeout?: number ) : void;
 	rebuild() : Promise<void>;
-	message( titleOrMessage:string, message?:string ) : Promise<void>;
+	message(
+		titleOrMessage:string|number,
+		message?:string|number
+	) : Promise<void>;
 	ask(
 		titleOrQuestion:string,
 		questionOrOptions?:string|string[],
@@ -541,17 +544,21 @@ class Compiler{
 					await (view.leaf as any).rebuildView();
 				},
 
-				async message( titleOrMessage:string, message?:string  ) : Promise<void> {
+				async message(
+					titleOrMessage:string|number,
+					message?:string|number
+				) : Promise<void> {
 					const m = new MessageModal(app);
 
 					let title: string;
 					let msg: string;
+
 					if (message == undefined){
-						msg = titleOrMessage;
+						msg = titleOrMessage.toString();
 						title = '';
 					}else{
-						title = titleOrMessage;
-						msg = message;
+						title = titleOrMessage.toString();
+						msg = message.toString();
 					}
 
 					await m.execute(title, msg);
