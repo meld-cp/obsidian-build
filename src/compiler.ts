@@ -161,7 +161,7 @@ export class Compiler{
 						'gif':'image/gif',
 						'svg':'image/svg+xml',
 					}[af.extension] ?? '';
-					const content = await app.vault.read(af);
+					const content = await app.vault.readBinary(af);
 					const buf = Buffer.from(content);
 					const base64Data = buf.toString('base64');
 					return `data:${finalMimeType};base64,${base64Data}`;
