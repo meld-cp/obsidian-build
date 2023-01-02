@@ -9,29 +9,29 @@ export class Parser {
 		data:IDataSetCollection,
 		templates:string[]
 	) : void {
-		const lines = content.split('\n').map( e=>e.trim().trim());
+		const lines = content.split('\n');
 		//console.debug(lines);
 
 		let currentHeader = '';
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			if (line.startsWith('#')){
+		for ( let i = 0; i < lines.length; i++ ) {
+			const trimLine = lines[i].trim();
+			if (trimLine.startsWith('#')){
 				// header
-				currentHeader = this.extractHeader(line);
-			}else if (line.startsWith('|')){
+				currentHeader = this.extractHeader(trimLine);
+			}else if ( trimLine.startsWith('|') ){
 				// extract table
 				const tableLines: string[] = [];
-				while( i < lines.length && lines[i].startsWith('|') ){
-					const tableLine = lines[i];
+				while( i < lines.length && lines[i].trim().startsWith('|') ){
+					const tableLine = lines[i].trim();
 					tableLines.push(tableLine);
 					i++;
 				}
 				const dataPropName = this.convertToTableName( currentHeader.length > 0 ? currentHeader : name );
 				data[dataPropName] = this.parseAsMdTable(tableLines);
-			}else if ( line.startsWith('```html') ){
+			}else if ( trimLine.startsWith('```html') ){
 				const templateLines: string[] = [];
 				i++;
-				while( i < lines.length && !lines[i].startsWith('```') ){
+				while( i < lines.length && !lines[i].trim().startsWith('```') ){
 					const templateLine = lines[i];
 					templateLines.push(templateLine);
 					i++;
@@ -42,7 +42,7 @@ export class Parser {
 	}
 
 	private extractHeader(line:string) : string{
-		return this.convertToTableName(line.replace('#',''));
+		return this.convertToTableName(line.replace('#','').trim());
 	}
 
 	private parseAsMdTable( tableLines:string[] ): DataSet {

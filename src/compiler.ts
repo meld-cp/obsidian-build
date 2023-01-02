@@ -128,7 +128,7 @@ export class Compiler{
 			
 			io: {
 				
-				import : async (filepath) => await this.import(log, data, templateBlocks, filepath ),
+				import : async (filepath) => await this.import( log, data, templateBlocks, filepath ),
 
 				async load(path):Promise<string|undefined> {
 					const filepath = Utils.getSameFolderFilepath(path);
@@ -136,13 +136,13 @@ export class Compiler{
 					const af = app.vault.getAbstractFileByPath(filepath);
 					
 					if (!(af instanceof TFile)){
-						return Promise.resolve(undefined);
+						return undefined;
 					}
 
 					return await app.vault.read(af)
 				},
 
-				load_data: async (filepath, name) => await this.data_loader(data, filepath, name),
+				load_data: async (filepath, name) => await this.data_loader( data, filepath, name ),
 				
 				//load_template: (filepath) => this.template_loader(templateBlocks, filepath),
 	
@@ -184,7 +184,7 @@ export class Compiler{
 					}
 				},
 
-				async open( linktext ) {
+				async open( linktext: string ) {
 					await app.workspace.openLinkText( linktext, '' );
 				},
 
@@ -256,6 +256,8 @@ export class Compiler{
 		templates: string[],
 		path:string
 	) : Promise<boolean>{
+		
+		//console.log('import');
 
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(path);
 		if (!absFilepath){
@@ -272,6 +274,7 @@ export class Compiler{
 
 		if ( file.extension == 'md' ){
 			const content = await app.vault.read( file );
+			//console.log({content});
 			const pzr = new Parser();
 			pzr.applyMarkdownContent( file.basename, content, data, templates);
 			return true;
