@@ -1,5 +1,5 @@
 import { App, Modal, Setting } from "obsidian";
-import { Utils } from "utils";
+import { Utils } from "src/utils";
 
 export class AskModal extends Modal {
 

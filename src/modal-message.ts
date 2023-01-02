@@ -1,5 +1,5 @@
 import { App, Modal } from "obsidian";
-import { Utils } from "utils";
+import { Utils } from "src/utils";
 
 export class MessageModal extends Modal {
 

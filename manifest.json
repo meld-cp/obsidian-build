@@ -1,6 +1,6 @@
 {
 	"id": "meld-build",
-	"name": "Meld Builder",
+	"name": "Meld Build",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "",
