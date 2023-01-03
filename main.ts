@@ -3,37 +3,6 @@ import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
 
-HB.registerHelper('format_number', function (value, options) {
-    // Helper parameters
-    const dp:number = parseInt( options.hash['decimal_places'] ) || parseInt( options.hash['dp'] ) || 2;
-
-	// Parse to float
-    value = parseFloat(value);
-
-    // Returns the formatted number
-    return value.toFixed(dp);
-});
-
-HB.registerHelper('format_date', function (value, options) {
-    // Helper parameters
-    const pattern:string = options.hash['pattern'] as string || 'yyyy-MM-dd';
-
-	// Returns the formatted date
-	return moment(value).format(pattern);
-});
-
-//HB.registerHelper('data_uri', function (value, options) {
-	//TODO
-    // Helper parameters
-    //const file = options.hash['file'] as string;
-	//const contentType = options.hash['content_type'] as string;
-
-	// check if file exists
-	// convert file to data uri
-	
-//});
-
-
 interface MeldBuildPluginSettings {
 	mySetting: string;
 }
@@ -47,6 +16,9 @@ export default class MeldBuildPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+
+
+		this.registerHandlebarHelpers();
 
 		// try {
 		// 	this.registerExtensions(['html'], 'meld-build-html-view');
@@ -71,6 +43,41 @@ export default class MeldBuildPlugin extends Plugin {
 				}
 			}
 		});
+
+
+	}
+
+	private registerHandlebarHelpers(){
+		// register handlebar helpers
+		HB.registerHelper('format_number', function (value, options) {
+			// Helper parameters
+			const dp:number = parseInt( options.hash['decimal_places'] ) || parseInt( options.hash['dp'] ) || 2;
+		
+			// Parse to float
+			value = parseFloat(value);
+		
+			// Returns the formatted number
+			return value.toFixed(dp);
+		});
+		
+		HB.registerHelper('format_date', function (value, options) {
+			// Helper parameters
+			const pattern:string = options.hash['pattern'] as string || 'yyyy-MM-dd';
+		
+			// Returns the formatted date
+			return moment(value).format(pattern);
+		});
+		
+		//HB.registerHelper('data_uri', function (value, options) {
+			//TODO
+			// Helper parameters
+			//const file = options.hash['file'] as string;
+			//const contentType = options.hash['content_type'] as string;
+		
+			// check if file exists
+			// convert file to data uri
+			
+		//});
 
 	}
 
