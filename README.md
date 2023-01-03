@@ -1,18 +1,21 @@
 # Meld Build - An Obsidian Plugin
 
+Write and execute JavaScript in code blocks to render templates, query DataView and create dynamic notes.
+
 ## Documentaion
 
-User Guide: [docs/user-guide.md]
+- [User Guide](/docs/user-guide.md)
 
 ### Examples
 
-Simple Invoice Builder: [docs/examples/invoice-builder/readme.md]
+- [Guess The Number Game](/docs/examples/guess-the-number/readme.md)
+- [Simple Invoice Builder](/docs/examples/invoice-builder/readme.md)
 
 ## To Do
 
--[ ] better docs and examples
--[ ] alpha release
--[ ] test on mobile
+- [ ] better docs and examples
+- [ ] alpha release
+- [ ] test on mobile
 
 ## Manually installing the plugin
 

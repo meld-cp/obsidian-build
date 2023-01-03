@@ -4,16 +4,18 @@
 
 ### Logging
 
+````
 ```js
 console.log('test logging to console');
 await $.logger.set_file('Run Log.md');
 await $.log('test logging via $.log');
 await $.logger.info('1','2',[3,4], 5);
-
 ```
+````
 
 ### UI
 
+````
 ```js
 // Notice
 $.ui.notice('test notice');
@@ -35,10 +37,13 @@ $.ui.message('Math', 13 * 67 );
 // reload view
 await $.ui.rebuild();
 ```
+````
 
 ### IO
+````
 ```js
 await $.io.import('some other file.md')
 const dataurl = await $.io.load_data_url('logo.png');
 $.log(dataurl.length);
 ```
+````
