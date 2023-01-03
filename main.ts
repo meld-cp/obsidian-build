@@ -64,7 +64,7 @@ export default class MeldBuildPlugin extends Plugin {
 				buttonCount++;
 				el.createEl('button', {text: helpButtonLabel ?? '❔', title: 'Help' }, el=>{
 					el.on('click', '*', async ev=>{
-						window.open('https://github.com/meld-cp/obsidian-build/docs/user-guide.md');
+						window.open('https://github.com/meld-cp/obsidian-build/blob/master/docs/user-guide.md');
 					});
 				} );
 			}
