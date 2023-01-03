@@ -1,11 +1,11 @@
-import { Editor, MarkdownView, moment, Plugin } from 'obsidian';
+import { Editor, MarkdownView, moment, Notice, Plugin } from 'obsidian';
 import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
 
 HB.registerHelper('format_number', function (value, options) {
     // Helper parameters
-    const dp = parseInt( options.hash['decimal_places'] ) || parseInt( options.hash['dp'] ) || 2;
+    const dp:number = parseInt( options.hash['decimal_places'] ) || parseInt( options.hash['dp'] ) || 2;
 
 	// Parse to float
     value = parseFloat(value);
@@ -16,7 +16,7 @@ HB.registerHelper('format_number', function (value, options) {
 
 HB.registerHelper('format_date', function (value, options) {
     // Helper parameters
-    const pattern = options.hash['pattern'] as string || 'yyyy-MM-dd';
+    const pattern:string = options.hash['pattern'] as string || 'yyyy-MM-dd';
 
 	// Returns the formatted date
 	return moment(value).format(pattern);
@@ -66,7 +66,8 @@ export default class MeldBuildPlugin extends Plugin {
 					const runner = compiler.compile(logger, editor, view);
 					runner();
 				}catch(e){
-					logger.error(e)
+					logger.error(e);
+					new Notice(e);
 				}
 			}
 		});
