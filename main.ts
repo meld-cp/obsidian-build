@@ -20,31 +20,78 @@ export default class MeldBuildPlugin extends Plugin {
 
 		this.registerHandlebarHelpers();
 
-		// try {
-		// 	this.registerExtensions(['html'], 'meld-build-html-view');
-		// } catch (error) {
-		// 	new Notice(error);
-		// 	//await showError(`File extensions ${HTML_FILE_EXTENSIONS} had been registered by other plugin!`);
-		// }
+		// this.registerMarkdownPostProcessor((element, context) => {
+		// 	const toolbarElements = element.querySelectorAll('code.language-meld-build-toolbar');
+		// 	toolbarElements.forEach(el => {
+		// 		context.addChild()
+		// 	});
+		// });
 
-		this.addCommand({
-			id: 'meld-build-run',
-			name: 'Run',
-			editorCallback: async (editor: Editor, view: MarkdownView) => {
-				const logger = new RunLogger();
-				try{
-					//await view.save();
-					const compiler = new Compiler();
-					const runner = compiler.compile(logger, editor, view);
-					runner();
-				}catch(e){
-					logger.error(e);
-					new Notice(e);
+		this.registerMarkdownCodeBlockProcessor('meld-build-toolbar', (source, el, ctx) => {
+			const lines = source.split('\n');
+			const valueMap = new Map<string,string>();
+			lines.forEach(line => {
+				const pair = line.split('=');
+				if(pair.length == 2){
+					valueMap.set(pair[0].trim(), pair[1].trim());
 				}
+			});
+
+			const runButtonLabel = valueMap.get('run');
+			const showRunButton = runButtonLabel !== '';
+
+			const helpButtonLabel = valueMap.get('help');
+			const showHelpButton = helpButtonLabel !== '';
+
+			let buttonCount = 0;
+			if (showRunButton){
+				buttonCount++;
+				el.createEl('button', { text: runButtonLabel ?? 'Run'}, el =>{
+					el.on('click', '*', ev=>{
+						const view = app.workspace.getActiveViewOfType( MarkdownView );
+						if (!view){
+							return;
+						}
+						this.buildAndRun(view.editor, view);
+					});
+				});
 			}
+
+			if (showHelpButton){
+				if ( buttonCount > 0 ){
+					el.createSpan('', el=>{ el.style.marginLeft = '1em'; });
+				}
+				buttonCount++;
+				el.createEl('button', {text: helpButtonLabel ?? '❔', title: 'Help' }, el=>{
+					el.on('click', '*', async ev=>{
+						window.open('https://github.com/meld-cp/obsidian-build/docs/user-guide.md');
+					});
+				} );
+			}
+
 		});
 
 
+		this.addCommand({
+			id: 'run',
+			name: 'Run',
+			editorCallback: this.buildAndRun
+		});
+
+
+	}
+
+	private buildAndRun( editor:Editor, view: MarkdownView ){
+		const logger = new RunLogger();
+		try{
+			//await view.save();
+			const compiler = new Compiler();
+			const runner = compiler.compile(logger, editor, view);
+			runner();
+		}catch(e){
+			logger.error(e);
+			new Notice(e);
+		}
 	}
 
 	private registerHandlebarHelpers(){
