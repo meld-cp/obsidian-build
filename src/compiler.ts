@@ -10,6 +10,7 @@ import { RunLogger } from 'src/run-logger';
 import { TRunContext } from "src/run-context";
 
 export class Compiler{
+	private templateLanguages = ['html', 'css'];
 
 	public compile( logger: RunLogger, editor: Editor, view: MarkdownView ) : () => void {
 
@@ -39,10 +40,10 @@ export class Compiler{
 		const data = pzr.fetchData(editor, fileCache);
 
 		// code
-		const codeBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['js', 'javascript']);
+		const codeBlocks = pzr.fetchCodeBlocks( editor, fileCache, ['js', 'javascript'] );
 
 		// templates
-		const templateBlocks = pzr.fetchCodeBlocks(editor, fileCache, ['html']);
+		const templateBlocks = pzr.fetchCodeBlocks( editor, fileCache, this.templateLanguages );
 
 		return {
 			sourceCode: codeBlocks.join('\n'),
@@ -160,6 +161,7 @@ export class Compiler{
 						'png':'image/png',
 						'gif':'image/gif',
 						'svg':'image/svg+xml',
+						'css':'text/css'
 					}[af.extension] ?? '';
 
 					const base64Data = Utils.toBase64( await app.vault.readBinary(af) );
@@ -276,7 +278,13 @@ export class Compiler{
 			const content = await app.vault.read( file );
 			//console.log({content});
 			const pzr = new Parser();
-			pzr.applyMarkdownContent( file.basename, content, data, templates);
+			pzr.applyMarkdownContent(
+				file.basename,
+				content,
+				data,
+				templates,
+				this.templateLanguages
+			);
 			return true;
 		}else{
 			log.error(`import::Unimplemented file extension: "${path}"`);

@@ -7,8 +7,10 @@ export class Parser {
 		name:string,
 		content:string,
 		data:IDataSetCollection,
-		templates:string[]
+		templates:string[],
+		templateLanguages: string[]
 	) : void {
+
 		const lines = content.split('\n');
 		//console.debug(lines);
 
@@ -16,9 +18,12 @@ export class Parser {
 		for ( let i = 0; i < lines.length; i++ ) {
 			const trimLine = lines[i].trim();
 			if (trimLine.startsWith('#')){
+				
 				// header
 				currentHeader = this.extractHeader(trimLine);
+
 			}else if ( trimLine.startsWith('|') ){
+				
 				// extract table
 				const tableLines: string[] = [];
 				while( i < lines.length && lines[i].trim().startsWith('|') ){
@@ -28,15 +33,19 @@ export class Parser {
 				}
 				const dataPropName = this.convertToTableName( currentHeader.length > 0 ? currentHeader : name );
 				data[dataPropName] = this.parseAsMdTable(tableLines);
-			}else if ( trimLine.startsWith('```html') ){
+
+			}else if ( templateLanguages.find( v => trimLine.toLowerCase().startsWith('```' + v) ) !== undefined ){
+				
+				// extract template codeblock
 				const templateLines: string[] = [];
 				i++;
 				while( i < lines.length && !lines[i].trim().startsWith('```') ){
 					const templateLine = lines[i];
 					templateLines.push(templateLine);
-					i++;
+					i++; 
 				}
 				templates.push( templateLines.join('\n') );
+				
 			}
 		}
 	}
