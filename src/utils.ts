@@ -1,4 +1,4 @@
-import { normalizePath, TFile } from "obsidian";
+import { arrayBufferToBase64, normalizePath, TFile } from "obsidian";
 
 export class Utils{
 
@@ -22,5 +22,9 @@ export class Utils{
 	
 	public static delay(ms: number) : Promise<()=>void> {
 		return new Promise( resolve => setTimeout(resolve, ms) );
+	}
+
+	public static toBase64( buf: ArrayBuffer ) : string {
+		return arrayBufferToBase64( buf );
 	}
 }

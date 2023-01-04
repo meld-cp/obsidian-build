@@ -43,9 +43,7 @@ export default class MeldBuildPlugin extends Plugin {
 			const helpButtonLabel = valueMap.get('help');
 			const showHelpButton = helpButtonLabel !== '';
 
-			let buttonCount = 0;
 			if (showRunButton){
-				buttonCount++;
 				el.createEl('button', { text: runButtonLabel ?? 'Run'}, el =>{
 					el.on('click', '*', ev=>{
 						const view = app.workspace.getActiveViewOfType( MarkdownView );
@@ -58,10 +56,6 @@ export default class MeldBuildPlugin extends Plugin {
 			}
 
 			if (showHelpButton){
-				if ( buttonCount > 0 ){
-					el.createSpan('', el=>{ el.style.marginLeft = '1em'; });
-				}
-				buttonCount++;
 				el.createEl('button', {text: helpButtonLabel ?? '❔', title: 'Help' }, el=>{
 					el.on('click', '*', async ev=>{
 						window.open('https://github.com/meld-cp/obsidian-build/blob/master/docs/user-guide.md');

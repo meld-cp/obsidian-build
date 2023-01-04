@@ -50,5 +50,9 @@ esbuild.build({
 			src: './manifest.json',
 			dest: prod ? './dist/manifest.json' : './test-vault/.obsidian/plugins/meld-build/manifest.json',
 		}),
+		copyStaticFiles({
+			src: './styles.css',
+			dest: prod ? './dist/styles.css' : './test-vault/.obsidian/plugins/meld-build/styles.css',
+		}),
 	]
 }).catch(() => process.exit(1));
