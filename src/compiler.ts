@@ -332,14 +332,14 @@ export class Compiler{
 		
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(path);
 		if (!absFilepath){
-			log.error(`import::Unable to get file path from active file: "${path}"`);
+			await log.error(`import::Unable to get file path from active file: "${path}"`);
 			return false;
 		}
 
 		const file = app.vault.getAbstractFileByPath(absFilepath);
 		
 		if (!(file instanceof TFile)){
-			log.error(`import::File not found: "${path}"`);
+			await log.error(`import::File not found: "${path}"`);
 			return false;
 		}
 
@@ -354,7 +354,7 @@ export class Compiler{
 			);
 			return true;
 		}else{
-			log.error(`import::Unimplemented file extension: "${path}"`);
+			await log.error(`import::Unimplemented file extension: "${path}"`);
 			return false;
 		}
 			
