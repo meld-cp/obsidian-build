@@ -11,12 +11,19 @@ const DEFAULT_SETTINGS: MeldBuildPluginSettings = {
 	mySetting: 'default'
 }
 
+const CODE_BLOCK_LANG_TOOLBAR = 'meld-build-toolbar';
+
 export default class MeldBuildPlugin extends Plugin {
 	settings: MeldBuildPluginSettings;
 
+
 	async onload() {
+		
+		//console.debug((app as any).commands.commands);
+
 		await this.loadSettings();
 
+		await this.reloadActiveViewsWithToolbars();
 
 		this.registerHandlebarHelpers();
 
@@ -27,7 +34,7 @@ export default class MeldBuildPlugin extends Plugin {
 		// 	});
 		// });
 
-		this.registerMarkdownCodeBlockProcessor('meld-build-toolbar', (source, el, ctx) => {
+		this.registerMarkdownCodeBlockProcessor( CODE_BLOCK_LANG_TOOLBAR, (source, el, ctx) => {
 			const lines = source.split('\n');
 			const valueMap = new Map<string,string>();
 			lines.forEach(line => {
@@ -44,14 +51,8 @@ export default class MeldBuildPlugin extends Plugin {
 			const showHelpButton = helpButtonLabel !== '';
 
 			if (showRunButton){
-				el.createEl('button', { text: runButtonLabel ?? 'Run'}, el =>{
-					el.on('click', '*', ev=>{
-						const view = app.workspace.getActiveViewOfType( MarkdownView );
-						if (!view){
-							return;
-						}
-						this.buildAndRun(view.editor, view);
-					});
+				el.createEl('button', { text: runButtonLabel ?? 'Run'}, el => {
+					el.on('click', '*', ev => this.buildAndRunActiveView() );
 				});
 			}
 
@@ -75,7 +76,37 @@ export default class MeldBuildPlugin extends Plugin {
 
 	}
 
-	private buildAndRun( editor:Editor, view: MarkdownView ){
+	private async reloadActiveViewsWithToolbars(){
+		app.workspace.iterateAllLeaves( leaf =>{
+			const view = leaf.view;
+			if ( view instanceof MarkdownView ){
+				
+				if (!view.editor.getValue().contains(CODE_BLOCK_LANG_TOOLBAR)){
+					return;
+				}
+		
+				console.debug( `Meld-Build::Rebuilding view for file '${view.file.path}'` );
+		
+				(view.leaf as any).rebuildView();		
+			}
+		});
+		//const view = app.workspace.getActiveViewOfType( MarkdownView );
+		//if (view == null){
+		//	return;
+		//}
+
+		
+	}
+
+	private async buildAndRunActiveView(){
+		const view = app.workspace.getActiveViewOfType( MarkdownView );
+		if (!view){
+			return;
+		}
+		await this.buildAndRun( view.editor, view);
+	}
+
+	private async buildAndRun( editor:Editor, view: MarkdownView ){
 		const logger = new RunLogger();
 		try{
 			//await view.save();
@@ -83,7 +114,7 @@ export default class MeldBuildPlugin extends Plugin {
 			const runner = compiler.compile(logger, editor, view);
 			runner();
 		}catch(e){
-			logger.error(e);
+			await logger.error(e);
 			new Notice(e);
 		}
 	}

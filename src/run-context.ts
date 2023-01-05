@@ -1,17 +1,18 @@
 import { DataSet, IDataSetCollection } from "src/data-set";
 import { DataviewApi } from "obsidian-dataview";
 import { RunLogger } from "src/run-logger";
+import { NamedCodeBlock } from "./named-code-block";
 
 export type TRunContext = {
 
 	sourceCode: string;
 
 	data: IDataSetCollection;
-	templates: string[];
+	templates: NamedCodeBlock[];
 
 	logger: RunLogger,
 	log( ...params: any[] ) : Promise<void>;
-	render( template:string, data:any ) : string;
+	render( template:string|NamedCodeBlock, data:any ) : string;
 
 	ui: TUiRunContext;
 

@@ -1,14 +1,136 @@
 import { DataSet, DataSetRow, IDataSetCollection } from "src/data-set";
 import { CachedMetadata, Editor } from "obsidian";
+import { NamedCodeBlock } from "./named-code-block";
+import { CodeBlockInfo } from "./code-block-info";
 
 export class Parser {
+
+	public fetchCodeBlocks(
+		editor: Editor,
+		fileCache: CachedMetadata | undefined,
+		languages :string[]
+	): NamedCodeBlock[] {
+		const result: NamedCodeBlock[] = [];
+		
+		if ( fileCache == undefined ){
+			return result;
+		}
+
+		if ( fileCache.sections == undefined ){
+			return result;
+		}
+		
+		//console.log(fileCache.sections);
+		const codeBlocks = fileCache.sections?.filter( s => ['heading','code'].contains( s.type ) ) ?? [];
+		//console.debug({codeBlocks});
+
+		let cbName = '';
+		codeBlocks.forEach( codeBlockSection => {
+			
+			const from = editor.offsetToPos( codeBlockSection.position.start.offset );
+			const to = editor.offsetToPos( codeBlockSection.position.end.offset );
+			const content = editor.getRange( from, to );
+			
+			//console.debug(content);
+
+			if ( codeBlockSection.type == 'heading' ){
+				cbName = this.extractHeaderName(content);
+				return;
+			}
+
+			// code block
+			const lines = content.split('\n');
+			if ( lines.length <= 2 ){
+				return;
+			}
+
+			// filter languages
+			const codeBlockInfo = this.extractCodeBlockInfo(lines[0]);
+			if (!codeBlockInfo){
+				return;
+			}
+
+			if ( !languages.contains( codeBlockInfo.language ) ){
+				return;
+			}
+
+			// remove first and last lines
+			const cbContent = lines.slice(1,-1).join('\n');
+
+			const codeBlock = new NamedCodeBlock( codeBlockInfo, cbName, cbContent );
+
+			result.push( codeBlock );
+
+		});
+
+		return result;
+	}
+	
+	private extractCodeBlockInfo( line:string ) : CodeBlockInfo | null {
+		/*
+		match tests
+			```lang 					=> { language: 'lang', params:[] }
+			```lang with space			=> { language: 'lang', params:['with','space'] }
+			```  whitespaced			=> { language: 'whitespaced', params:[] }
+			```` multitick				=> { language: 'multitick', params:[] }
+			````multitick with space	=> { language: 'multitick', params:['with','space'] }
+		*/
+		const matches = line.match(/````*\s*([a-z0-9-]+)(?:\s*([a-z0-9-]+))*/i);
+		
+		//console.debug(matches);
+
+		if ( matches == null ){
+			return null;
+		}
+
+		const lang = matches.at(1);
+		if ( lang === undefined ){
+			return null;
+		}
+
+		const params:string[] = matches.slice(2).filter( e => e );
+		//console.debug({params});
+		
+		return new CodeBlockInfo( lang, params );
+	}
+
+	// private matchesCodeBlockStart( line:string, languages:string[] ) : boolean {
+		
+	// 	const cbInfo = this.extractCodeBlockInfo(line);
+
+	// 	if ( cbInfo == null ){
+	// 		return false;
+	// 	}
+		
+	// 	return languages.contains( cbInfo?.language );
+	// }
+
+	public loadCsv( csvContent:string ) : DataSet {
+		const lines = csvContent.split('\n').map( e=>e.trim() );
+		if (lines.length == 0){
+			return new DataSet();
+		}
+		
+		const columns = lines.first()?.split(',').map( e => this.extractAsColumnName(e) ) ?? [];
+		
+		const rows = new Array<DataSetRow>();
+
+		for (let i = 1; i < lines.length; i++) {
+			const rowData = lines[i].split(',').map( d => this.extractValueFromString(d));
+			rows.push( new DataSetRow(columns, rowData));
+		}
+
+		const ds = new DataSet( ...rows );
+		
+		return ds;
+	}
 
 	public applyMarkdownContent(
 		name:string,
 		content:string,
 		data:IDataSetCollection,
-		templates:string[],
-		templateLanguages: string[]
+		templates:NamedCodeBlock[],
+		templateLanguageFilter: string[]
 	) : void {
 
 		const lines = content.split('\n');
@@ -17,12 +139,15 @@ export class Parser {
 		let currentHeader = '';
 		for ( let i = 0; i < lines.length; i++ ) {
 			const trimLine = lines[i].trim();
-			if (trimLine.startsWith('#')){
+
+			const codeBlockInfo = this.extractCodeBlockInfo(trimLine);
+
+			if ( trimLine.startsWith('#') ) {
 				
 				// header
-				currentHeader = this.extractHeader(trimLine);
+				currentHeader = this.extractHeaderName(trimLine);
 
-			}else if ( trimLine.startsWith('|') ){
+			} else if ( trimLine.startsWith('|') ){
 				
 				// extract table
 				const tableLines: string[] = [];
@@ -31,10 +156,10 @@ export class Parser {
 					tableLines.push(tableLine);
 					i++;
 				}
-				const dataPropName = this.convertToTableName( currentHeader.length > 0 ? currentHeader : name );
-				data[dataPropName] = this.parseAsMdTable(tableLines);
+				const dataPropName = this.extractAsTableName( currentHeader.length > 0 ? currentHeader : name );
+				data[dataPropName] = this.parseMdTable(tableLines);
 
-			}else if ( templateLanguages.find( v => trimLine.toLowerCase().startsWith('```' + v) ) !== undefined ){
+			} else if ( codeBlockInfo && templateLanguageFilter.contains( codeBlockInfo.language ) ){
 				
 				// extract template codeblock
 				const templateLines: string[] = [];
@@ -44,17 +169,24 @@ export class Parser {
 					templateLines.push(templateLine);
 					i++; 
 				}
-				templates.push( templateLines.join('\n') );
+
+				const codeBlock = new NamedCodeBlock(
+					codeBlockInfo,
+					name,
+					templateLines.join('\n')
+				);
+				
+				templates.push( codeBlock );
 				
 			}
 		}
 	}
 
-	private extractHeader(line:string) : string{
-		return this.convertToTableName(line.replace('#','').trim());
+	private extractHeaderName(line:string) : string{
+		return line.replaceAll('#','').trim();
 	}
 
-	private parseAsMdTable( tableLines:string[] ): DataSet {
+	private parseMdTable( tableLines:string[] ): DataSet {
 		const data: DataSet = new DataSet();
 		
 		const tlines = tableLines
@@ -63,7 +195,7 @@ export class Parser {
 		//console.debug(tableLines);
 		const columns = tlines
 			.first()?.split('|')
-			.map( e=> this.convertToColumnName(e) )
+			.map( e=> this.extractAsColumnName(e) )
 			.filter( e=>e.length > 0)
 			?? []
 		;
@@ -77,7 +209,7 @@ export class Parser {
 			if (rowLine.startsWith('|') && rowLine.endsWith('|')){
 				continue;
 			}
-			const rowValues : unknown[] = rowLine.split('|').map( e => this.covertFromString(e) );
+			const rowValues : unknown[] = rowLine.split('|').map( e => this.extractValueFromString(e) );
 			data.push( new DataSetRow( columns, rowValues ) );
 		}
 
@@ -113,9 +245,9 @@ export class Parser {
 				const to = editor.offsetToPos(section.position.end.offset);
 				const table = editor.getRange( from, to );
 				const tableLines = table.split('\n');
-				const data = this.parseAsMdTable(tableLines);
+				const data = this.parseMdTable(tableLines);
 
-				const tableName = this.convertToTableName(lastHeading);
+				const tableName = this.extractAsTableName(lastHeading);
 				result[tableName] = data;
 				//result.push( data );
 				
@@ -152,15 +284,15 @@ export class Parser {
 
 	}
 
-	private convertToTableName( str:string ) : string {
-		return str.trim().replace(/\W/ig, '_').toLowerCase();
+	private extractAsTableName( str:string ) : string {
+		return str.trim().replaceAll(/\W/ig, '_').toLowerCase();
 	}
 
-	private convertToColumnName( str:string ) : string {
-		return str.trim().replace(/\W/ig, '_').toLowerCase();
+	private extractAsColumnName( str:string ) : string {
+		return str.trim().replaceAll(/\W/ig, '_').toLowerCase();
 	}
 	
-	private covertFromString( str:string ) : string | number | Date {
+	private extractValueFromString( str:string ) : string | number | Date {
 		const trimmed = str.trim();
 		//console.debug({trimmed});
 		//see: https://rgxdb.com/r/526K7G5W
@@ -183,61 +315,5 @@ export class Parser {
 		return trimmed;
 	}
 
-	public fetchCodeBlocks(
-		editor: Editor,
-		fileCache: CachedMetadata | undefined,
-		languages :string[]
-	): string[] {
-		const result: string[] = [];
-		
-		if ( fileCache == undefined ){
-			return result;
-		}
-
-		if ( fileCache.sections == undefined ){
-			return result;
-		}
-		
-		fileCache.sections.forEach( section => {
-			if (section.type != 'code'){
-				return;
-			}
-			const from = editor.offsetToPos(section.position.start.offset);
-			const to = editor.offsetToPos(section.position.end.offset);
-			const code = editor.getRange( from, to );
-			let lines = code.split('\n');
-			if (lines.length <= 2){
-				return;
-			}
-			const lineStarts = languages.map( l=> '```'+l );
-			if ( !lineStarts.find( e=> e.startsWith( lines[0].toLowerCase() ) )){
-				return;
-			}
-			// remove first and last lines
-			lines = lines.slice(1,-1)
-			result.push( lines.join('\n') );
-		});
-
-		return result;
-	}
 	
-	public loadCsv( csvdata:string ) : DataSet {
-		const lines = csvdata.split('\n').map( e=>e.trim());
-		if (lines.length == 0){
-			return new DataSet();
-		}
-		//console.debug(lines);
-		const columns = lines.first()?.split(',').map( e=> this.convertToColumnName(e) ) ?? [];
-		
-		const rows = new Array<DataSetRow>();
-
-		for (let i = 1; i < lines.length; i++) {
-			const rowData = lines[i].split(',').map( d=>this.covertFromString(d));
-			rows.push( new DataSetRow(columns, rowData));
-		}
-
-		const ds = new DataSet( ...rows );
-		//ds.columns = columns;
-		return ds;
-	}
 }

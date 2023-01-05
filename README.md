@@ -16,6 +16,7 @@ Write and execute JavaScript in code blocks to render templates, query DataView 
 - [ ] better docs and examples
 - [ ] alpha release
 - [ ] test on mobile
+- [ ] better file logging
 
 ## Manually installing the plugin
 

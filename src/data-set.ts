@@ -1,5 +1,5 @@
 export class DataSet extends Array<DataSetRow> {
-	// TODO: is this needed?
+	
 }
 
 export interface IDataSetCollection {

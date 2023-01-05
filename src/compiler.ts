@@ -8,6 +8,7 @@ import { DataSet, IDataSetCollection } from "src/data-set";
 import { Parser } from "src/parser";
 import { RunLogger } from 'src/run-logger';
 import { TRunContext } from "src/run-context";
+import { NamedCodeBlock } from "./named-code-block";
 
 export class Compiler{
 	private templateLanguages = ['html', 'css'];
@@ -22,6 +23,8 @@ export class Compiler{
 
 		// build context
 		const context = this.build_run_context(logger, editor, fileCache, view);
+
+		//console.debug(context.sourceCode);
 
 		// return runner
 		return () => this.buildSandboxedRunnerFunction(context);
@@ -45,8 +48,14 @@ export class Compiler{
 		// templates
 		const templateBlocks = pzr.fetchCodeBlocks( editor, fileCache, this.templateLanguages );
 
+
+		// source code
+		const sourceCode = codeBlocks.map( e=>e.content ).join('\n');
+
+		//console.debug({sourceCode});
+
 		return {
-			sourceCode: codeBlocks.join('\n'),
+			sourceCode: sourceCode,
 
 			data: data,
 			templates: templateBlocks,
@@ -54,10 +63,15 @@ export class Compiler{
 			logger : log,
 			log: async (...x) => await log.info( ...x ),
 
-			render( template, data ) {
-				const templateBuilder = HB.compile( template );
-				const result = templateBuilder(data);
-				return result;
+			render( template:string|NamedCodeBlock, data:any ) {
+
+				if( typeof template == 'string' ){
+					return HB.compile( template )(data);
+				}else if ( template instanceof NamedCodeBlock ){
+					return HB.compile( template.content )(data);
+				}
+
+				return '';
 			},
 
 			ui: {
@@ -255,7 +269,7 @@ export class Compiler{
 	private async import(
 		log: RunLogger,
 		data: IDataSetCollection,
-		templates: string[],
+		templates: NamedCodeBlock[],
 		path:string
 	) : Promise<boolean>{
 		
