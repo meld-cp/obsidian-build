@@ -19,7 +19,7 @@ The `$` accessor provides a way to use the meld-build API (See below).
 Within the current note:
 - All tables are parsed and added to the `$.data` array.
 - All non-`meld-build` blocks are added to the `$.blocks` array.
-- All `JavaScript` blocks with `'meld-build'` are concatenated, sandboxes and executed.
+- All `JavaScript` blocks with `meld-build` are concatenated, sandboxes and executed.
 
 ## Toolbar
 
