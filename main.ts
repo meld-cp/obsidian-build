@@ -1,8 +1,8 @@
-import { Editor, MarkdownView, moment, Notice, Plugin } from 'obsidian';
+import { Editor, MarkdownPostProcessorContext, MarkdownView, moment, Notice, Plugin } from 'obsidian';
 import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
-import { CODE_BLOCK_LANG_TOOLBAR } from 'src/constants';
+import { CODE_BLOCK_LANG_TOOLBAR, URL_HELP } from 'src/constants';
 
 interface MeldBuildPluginSettings {
 	mySetting: string;
@@ -24,44 +24,7 @@ export default class MeldBuildPlugin extends Plugin {
 
 		this.registerHandlebarHelpers();
 
-		// this.registerMarkdownPostProcessor((element, context) => {
-		// 	const toolbarElements = element.querySelectorAll('code.language-meld-build-toolbar');
-		// 	toolbarElements.forEach(el => {
-		// 		context.addChild()
-		// 	});
-		// });
-
-		this.registerMarkdownCodeBlockProcessor( CODE_BLOCK_LANG_TOOLBAR, (source, el, ctx) => {
-			const lines = source.split('\n');
-			const valueMap = new Map<string,string>();
-			lines.forEach(line => {
-				const pair = line.split('=');
-				if(pair.length == 2){
-					valueMap.set(pair[0].trim(), pair[1].trim());
-				}
-			});
-
-			const runButtonLabel = valueMap.get('run');
-			const showRunButton = runButtonLabel !== '';
-
-			const helpButtonLabel = valueMap.get('help');
-			const showHelpButton = helpButtonLabel !== '';
-
-			if (showRunButton){
-				el.createEl('button', { text: runButtonLabel ?? 'Run'}, el => {
-					el.on('click', '*', ev => this.buildAndRunActiveView() );
-				});
-			}
-
-			if (showHelpButton){
-				el.createEl('button', {text: helpButtonLabel ?? '❔', title: 'Help' }, el=>{
-					el.on('click', '*', async ev=>{
-						window.open('https://github.com/meld-cp/obsidian-build/blob/master/docs/user-guide.md');
-					});
-				} );
-			}
-
-		});
+		this.registerMarkdownCodeBlockProcessor( CODE_BLOCK_LANG_TOOLBAR,  this.processToolbarRender );
 
 
 		this.addCommand({
@@ -70,7 +33,46 @@ export default class MeldBuildPlugin extends Plugin {
 			editorCallback: this.buildAndRun
 		});
 
+		this.addCommand({
+			id: 'help',
+			name: 'Open help',
+			callback: this.openHelp
+		});
 
+
+	}
+
+	private processToolbarRender( source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext ){
+		const lines = source.split( '\n' );
+		const valueMap = new Map<string,string>();
+		lines.forEach( line => {
+			const pair = line.split( '=' );
+			if( pair.length == 2 ){
+				valueMap.set( pair[0].trim(), pair[1].trim() );
+			}
+		} );
+
+		const runButtonLabel = valueMap.get('run');
+		const showRunButton = runButtonLabel !== '';
+
+		const helpButtonLabel = valueMap.get('help');
+		const showHelpButton = helpButtonLabel !== '';
+
+		if (showRunButton){
+			el.createEl('button', { text: runButtonLabel ?? 'Run'}, el => {
+				el.on('click', '*', ev => this.buildAndRunActiveView() );
+			});
+		}
+
+		if (showHelpButton){
+			el.createEl('button', {text: helpButtonLabel ?? '❔', title: 'Help' }, el=>{
+				el.on( 'click', '*', ev => this.openHelp() );
+			} );
+		}
+	}
+
+	private openHelp(){
+		window.open(URL_HELP);
 	}
 
 	private async reloadActiveViewsWithToolbars(){
