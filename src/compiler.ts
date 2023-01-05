@@ -7,9 +7,10 @@ import { Utils } from 'src/utils';
 import { DataSet, IDataSetCollection } from "src/data-set";
 import { Parser } from "src/parser";
 import { RunLogger } from 'src/run-logger';
-import { TAssertRunContext, TRunContext } from "src/run-context";
+import { TRunContext } from "src/run-context";
 import { NamedCodeBlock } from "./named-code-block";
 import { CodeBlockInfoHelper } from "./code-block-info";
+import { AssertImplemention } from "./assert-impl";
 
 export class Compiler{
 
@@ -18,19 +19,84 @@ export class Compiler{
 		const fileCache = app.metadataCache.getFileCache(view.file);
 
 		if (fileCache == null){
-			return async () => {};
+			return () => {};
 		}
 
 		// build context
 		const context = this.build_run_context(logger, editor, fileCache, view);
 
 		if (context == null){
-			return () => new Notice( 'No JavaScript blocks were found marked with "meld-build"' );
+			return function() {
+				new Notice( 'No JavaScript blocks were found marked with "meld-build"' );
+			};
 		}
 
 		// return runner
-		return () => this.buildSandboxedRunnerFunction(context);
+		return () => this.buildSandboxedRunnerFunction(context, this.runtimeErrorHandler );
 		//return () => this.buildRunnerFunction(sourceCode, context);
+	}
+
+	private runtimeErrorHandler( context:TRunContext, e:any ):void{
+		//throw new Error('Runtime error');
+		//console.debug({context, e});
+		const lineNoPadding = 4;
+		const sourceLines = context.sourceCode.split('\n').map( (l, i) => `${String(i+1).padStart(lineNoPadding, ' ')}: ${l}` );
+		const stackLines = (e.stack as string)?.split('\n') ?? [];
+		const errorLineMatch = stackLines[1].match(/[<]anonymous[>]:(\d*):(\d*)/s);
+
+		let errLineNo : number|undefined = undefined;
+		let errLineCharNo : number|undefined = undefined;
+		let sourceErrorLines : string[] = [];
+		//let sourceErrorLineCharMarker = '';
+		if ( errorLineMatch && errorLineMatch?.length > 2 ){
+			const sourceLineOffset = 4;
+			const lookAroundCount = 2;
+			errLineNo = parseInt( errorLineMatch[1] ) - sourceLineOffset;
+			errLineCharNo = parseInt( errorLineMatch[2] );
+			const errLineIdx = errLineNo-1;
+			const listingFromLineIdx = Math.max( 0, errLineIdx - lookAroundCount );
+			const listingToLineIdx = Math.min( sourceLines.length-1, errLineIdx + 1 + lookAroundCount );
+
+			const pointerPadding = lineNoPadding + 2;
+			sourceErrorLines = [
+				...sourceLines.slice(listingFromLineIdx,errLineIdx),
+				sourceLines.at(errLineIdx) ?? '',
+				' '.repeat(pointerPadding + errLineCharNo-1 ) + `^--- ${e}`,
+				...sourceLines.slice(errLineIdx+1,listingToLineIdx),
+			]
+			//sourceErrorLineCharMarker = ' '.repeat(charNo-1) + '^';
+		}
+
+
+
+		context.logger.error(
+			e,
+			{
+				errorListing: ['=== RUNTIME ERROR ===', ...sourceErrorLines],
+				fullListing: ['=== FULL LISTING ===', ...sourceLines ],
+			}
+		);
+		//context.logger.error( );
+		
+		//console.debug('=== RUNTIME ERROR ===');
+		//console.debug('=== RUNTIME ERROR ===\n' + e + '\n\n' + sourceErrorLines.join('\n'));
+
+		//console.debug('=== FULL LISTING ===\n' + sourceLines.join('\n') );
+
+		const errFrag = new DocumentFragment();
+		errFrag.createDiv({text: 'RUNTIME ERROR'}, el =>{
+			el.style.fontWeight = 'bold';
+		});
+		//errFrag.appendText('MELD-BUILD - RUNTIME ERROR\n\n');
+		errFrag.createEl('pre', { text: sourceErrorLines.join('\n') }, el=>{
+			el.style.whiteSpace = 'pre-wrap';
+		} );
+
+		errFrag.createDiv( { text: 'See the console log for more details' }, el =>{
+			el.style.fontWeight = 'bold';
+		});
+		
+		context.ui.notice(errFrag, 20); 
 	}
 
 	private build_run_context(
@@ -333,7 +399,10 @@ export class Compiler{
 
 	}
 
-	private buildSandboxedRunnerFunction(context:TRunContext) : FunctionConstructor {
+	private buildSandboxedRunnerFunction(
+		context:TRunContext,
+		runtimeErrorHandler: (context:TRunContext, e:any) => void
+	) : FunctionConstructor {
 		const frame = document.createElement('iframe');
 		document.body.appendChild(frame);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -348,29 +417,31 @@ export class Compiler{
 		];
 		const undefineds = restrictedKeys.map( v=>undefined );
 
-		const errFrag = new DocumentFragment();
-		errFrag.appendText('RUNTIME ERROR\n');
-
 		const additionals = {
-			'errFrag': errFrag
+			'runtimeErrorHandler': runtimeErrorHandler
 		};
 
+// 		const finalSourceOld = `'use strict';
+// ( async () => {
+// 	try{
+// ${context.sourceCode}
+// 	}catch(e){
+// 		console.debug( { source: \`${context.sourceCode}\`, stack: e.stack.split('\\n') } );
+// 		errFrag.appendText(e);
+// 		$.logger.error(e);
+// 		$.ui.notice(errFrag);
+// 	}
+// } )();`;
+
+	const finalSource = `'use strict';
+( async () => {
+${context.sourceCode}
+} )().catch( e => runtimeErrorHandler($,e) );`;
 		return f(
 			...restrictedKeys,
 			...Object.keys(additionals),
 			'$',
-			`
-			'use strict';
-			( async () => {
-				${context.sourceCode}
-			} )()
-				.catch( (e) => {
-					errFrag.appendText(e);
-					$.logger.error(e);
-					$.ui.notice(errFrag);
-				})
-			;
-			`
+			finalSource
 		)(
 			...undefineds,
 			...Object.values(additionals),
@@ -381,57 +452,3 @@ export class Compiler{
 
 }
 
-class AssertImplemention implements TAssertRunContext{
-
-	private async showFailMessage( label:string, msg:string ) : Promise<void>{
-		const title = '❗ Assert Failed' + ( label.length > 0 ? ` - ${label}` : '' );
-		const m = new MessageModal(app);
-		await m.execute( title, msg );
-	}
-
-	public async isDefined( value:any, label?:string  ) : Promise<void> {
-		if ( value != undefined && value != null ){
-			return;
-		}
-		const msg = `Value is not defined`;
-		this.showFailMessage( label ?? '', msg );
-		throw msg;
-	}
-	
-	public async isTrue( value:any, label?:string  ) : Promise<void> {
-		if ( value ){
-			return;
-		}
-		const msg = `Value was expected to be truthy`;
-		this.showFailMessage( label ?? '', msg );
-		throw msg;
-	}
-
-	public async isFalse( value:any, label?:string  ) : Promise<void> {
-		if ( !value ){
-			return;
-		}
-		const msg = `Value was expected to be falsy`;
-		this.showFailMessage( label ?? '', msg );
-		throw msg;
-	}
-
-	public async eq( expected:any, actual:any, label?:string ) : Promise<void> {
-		if ( expected == actual ){
-			return;
-		}
-		const msg = `Expected: '${expected}' but got '${actual}'`;
-		this.showFailMessage( label ?? '', msg );
-		throw msg;
-	}
-
-	public async neq( expected:any, actual:any, label?:string ) : Promise<void> {
-		if ( expected != actual ){
-			return;
-		}
-		const msg = `Values are equal`;
-		this.showFailMessage( label ?? '', msg );
-		throw msg;
-	}
-
-}

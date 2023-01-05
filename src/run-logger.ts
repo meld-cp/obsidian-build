@@ -32,7 +32,7 @@ export class RunLogger {
 			content = params[0].toString();
 		}else{
 			isJson = true;
-			content = JSON.stringify(params, null, '  ');
+			content = JSON.stringify(params, null, 2).replaceAll('{},\n  ','');
 		}
 
 		const fmtPrefix = prefix.length > 0 ? ` [${prefix}] ` : '';
@@ -40,7 +40,7 @@ export class RunLogger {
 		let logLine: string;
 		if ( isJson ){
 			logLine = '```json\n'
-				+ fmtPrefix.trim() + '\n'
+				+ fmtPrefix.trim() + ' '
 				+ content + '\n```'
 			;
 		} else if (content.contains('\n')){
