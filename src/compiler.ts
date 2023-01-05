@@ -9,9 +9,9 @@ import { Parser } from "src/parser";
 import { RunLogger } from 'src/run-logger';
 import { TRunContext } from "src/run-context";
 import { NamedCodeBlock } from "./named-code-block";
+import { CodeBlockInfoHelper } from "./code-block-info";
 
 export class Compiler{
-	private templateLanguages = ['html', 'css'];
 
 	public compile( logger: RunLogger, editor: Editor, view: MarkdownView ) : () => void {
 
@@ -52,23 +52,18 @@ export class Compiler{
 
 		// runable code blocks
 		const runableCodeBlocks = allCodeBlocks
-			.filter( cb =>
-				['js', 'javascript'].contains( cb.info.language)
-				&& cb.info.params.contains('meld-build')
-			)
+			.filter( cb => CodeBlockInfoHelper.isRunable( cb.info ) )
 		;
-		if (runableCodeBlocks.length == 0){
+		if ( runableCodeBlocks.length == 0 ){
 			return null;
 		}
 
 		// source code
 		const sourceCode = runableCodeBlocks.map( e=>e.content ).join('\n');
 
-		// templates
-		const templateBlocks = allCodeBlocks
-			.filter( cb =>
-				this.templateLanguages.contains( cb.info.language)
-			)
+		// consumable blocks
+		const consumableBlocks = allCodeBlocks
+			.filter( cb => CodeBlockInfoHelper.isConsumable( cb.info ) )
 		;
 
 
@@ -76,7 +71,7 @@ export class Compiler{
 			sourceCode: sourceCode,
 
 			data: data,
-			templates: templateBlocks,
+			blocks: consumableBlocks,
 
 			logger : log,
 			log: async (...x) => await log.info( ...x ),
@@ -161,7 +156,7 @@ export class Compiler{
 			
 			io: {
 				
-				import : async (filepath) => await this.import( log, data, templateBlocks, filepath ),
+				import : async (filepath) => await this.import( log, data, consumableBlocks, filepath ),
 
 				async load(path):Promise<string|undefined> {
 					const filepath = Utils.getSameFolderFilepath(path);
@@ -176,9 +171,7 @@ export class Compiler{
 				},
 
 				load_data: async (filepath, name) => await this.data_loader( data, filepath, name ),
-				
-				//load_template: (filepath) => this.template_loader(templateBlocks, filepath),
-	
+
 				async load_data_url(path, mimetype) : Promise<string|undefined> {
 					const filepath = Utils.getSameFolderFilepath(path);
 					
@@ -267,27 +260,10 @@ export class Compiler{
 		return resultDataSet;
 	}
 
-	private async template_loader(templates: string[], filepath:string) : Promise<string>{
-		let resultContent = '';
-
-		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
-		if (!absFilepath){
-			return resultContent;
-		}
-		const file = app.vault.getAbstractFileByPath(absFilepath);
-		if (file instanceof TFile){
-			resultContent = await app.vault.read( file );
-			templates.push(resultContent);
-		}
-		
-
-		return resultContent;
-	}
-
 	private async import(
 		log: RunLogger,
 		data: IDataSetCollection,
-		templates: NamedCodeBlock[],
+		consumableBlocks: NamedCodeBlock[],
 		path:string
 	) : Promise<boolean>{
 		
@@ -314,8 +290,7 @@ export class Compiler{
 				file.basename,
 				content,
 				data,
-				templates,
-				this.templateLanguages
+				consumableBlocks
 			);
 			return true;
 		}else{

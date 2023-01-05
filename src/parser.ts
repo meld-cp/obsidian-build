@@ -1,7 +1,7 @@
 import { DataSet, DataSetRow, IDataSetCollection } from "src/data-set";
 import { CachedMetadata, Editor } from "obsidian";
 import { NamedCodeBlock } from "./named-code-block";
-import { CodeBlockInfo } from "./code-block-info";
+import { CodeBlockInfo, CodeBlockInfoHelper } from "./code-block-info";
 
 export class Parser {
 
@@ -129,8 +129,7 @@ export class Parser {
 		name:string,
 		content:string,
 		data:IDataSetCollection,
-		templates:NamedCodeBlock[],
-		templateLanguageFilter: string[]
+		consumableCodeBlocks:NamedCodeBlock[]
 	) : void {
 
 		const lines = content.split('\n');
@@ -159,24 +158,24 @@ export class Parser {
 				const dataPropName = this.extractAsTableName( currentHeader.length > 0 ? currentHeader : name );
 				data[dataPropName] = this.parseMdTable(tableLines);
 
-			} else if ( codeBlockInfo && templateLanguageFilter.contains( codeBlockInfo.language ) ){
+			} else if ( codeBlockInfo && CodeBlockInfoHelper.isConsumable( codeBlockInfo ) ){
 				
-				// extract template codeblock
-				const templateLines: string[] = [];
+				// extract consumable codeblock
+				const blockLines: string[] = [];
 				i++;
 				while( i < lines.length && !lines[i].trim().startsWith('```') ){
-					const templateLine = lines[i];
-					templateLines.push(templateLine);
+					const blockLine = lines[i];
+					blockLines.push(blockLine);
 					i++; 
 				}
 
 				const codeBlock = new NamedCodeBlock(
 					codeBlockInfo,
 					name,
-					templateLines.join('\n')
+					blockLines.join('\n')
 				);
 				
-				templates.push( codeBlock );
+				consumableCodeBlocks.push( codeBlock );
 				
 			}
 		}

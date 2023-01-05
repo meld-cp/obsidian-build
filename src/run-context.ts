@@ -8,7 +8,7 @@ export type TRunContext = {
 	sourceCode: string;
 
 	data: IDataSetCollection;
-	templates: NamedCodeBlock[];
+	blocks: NamedCodeBlock[];
 
 	logger: RunLogger,
 	log( ...params: any[] ) : Promise<void>;
