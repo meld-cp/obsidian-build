@@ -1,9 +1,56 @@
 # User Guide
 
+The Meld-Build plugin can be used to turn a note into a small, simple, application.
+
+For example, here is a JavaScript codeblock which will display a message box with the result of a simple calculation:
+````
+```js meld-build
+await $.ui.message( 56 / 5 );
+```
+````
+To run it, select the 'Meld-Build: Run' command from the command pallette.
+
+Notice that the JavaScript codeblock above is accompanied with the text 'meld-build'. This allows the plugin to sandbox and run the code within.
+
+The '$' accessor provides a way to use the meld-build API (See below).
+
+## What happens when a note is run?
+
+Within the current note:
+- All tables are parsed and added to the `$.data` array.
+- All non-`meld-build` blocks are adds to the `$.blocks` array.
+- All `JavaScript` blocks with `'meld-build'` are concatenated, sandboxes and executed.
+
+## Toolbar
+
+To make running meld-build codeblocks easier you can add the following codeblock to show a toolbar.
+
+````
+```meld-build-toolbar
+```
+````
+
+_TODO: add screenshot_
+
+## Templating
+
+One of the main features of meld-build is the built in templating (provided by [Handlebars](https://handlebarsjs.com/)).
+
+_TODO_
+
+## Accessing DataView
+
+_TODO_
+
 ## API
+
+_TODO_
 
 ### Logging
 
+_TODO_
+
+#### Examples
 ````
 ```js
 console.log('test logging to console');
@@ -15,6 +62,9 @@ await $.logger.info('1','2',[3,4], 5);
 
 ### UI
 
+_TODO_
+
+#### Examples
 ````
 ```js
 // Notice
@@ -40,6 +90,10 @@ await $.ui.rebuild();
 ````
 
 ### IO
+
+_TODO_
+
+#### Examples
 ````
 ```js
 await $.io.import('some other file.md')

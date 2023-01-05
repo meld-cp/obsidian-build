@@ -11,13 +11,6 @@ Write and execute JavaScript in code blocks to render templates, query DataView 
 - [Guess The Number Game](/docs/examples/guess-the-number/readme.md)
 - [Simple Invoice Builder](/docs/examples/invoice-builder/readme.md)
 
-## To Do
-
-- [ ] better docs and examples
-- [ ] alpha release
-- [ ] test on mobile
-- [ ] better file logging
-
 ## Manually installing the plugin
 
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/meld-build/`.
