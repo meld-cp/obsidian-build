@@ -1,4 +1,4 @@
-import { Editor, MarkdownPostProcessorContext, MarkdownView, moment, Notice, Plugin } from 'obsidian';
+import { Editor, MarkdownFileInfo, MarkdownPostProcessorContext, MarkdownView, moment, Notice, Plugin } from 'obsidian';
 import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
@@ -24,25 +24,32 @@ export default class MeldBuildPlugin extends Plugin {
 
 		this.registerHandlebarHelpers();
 
-		this.registerMarkdownCodeBlockProcessor( CODE_BLOCK_LANG_TOOLBAR,  this.processToolbarRender );
+		this.registerMarkdownCodeBlockProcessor(
+			CODE_BLOCK_LANG_TOOLBAR,
+			( source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext ) => this.processToolbarRender( source, el, ctx )
+		);
 
 
 		this.addCommand({
 			id: 'run',
 			name: 'Run',
-			editorCallback: this.buildAndRun
+			editorCallback: async (editor, view) => await this.buildAndRun(editor, view)
 		});
 
 		this.addCommand({
 			id: 'help',
 			name: 'Open help',
-			callback: this.openHelp
+			callback: () => this.openHelp()
 		});
 
 
 	}
 
-	private processToolbarRender( source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext ){
+	private processToolbarRender(
+		source: string,
+		el: HTMLElement,
+		ctx: MarkdownPostProcessorContext
+	){
 		const lines = source.split( '\n' );
 		const valueMap = new Map<string,string>();
 		lines.forEach( line => {
@@ -60,7 +67,7 @@ export default class MeldBuildPlugin extends Plugin {
 
 		if (showRunButton){
 			el.createEl('button', { text: runButtonLabel ?? 'Run'}, el => {
-				el.on('click', '*', ev => this.buildAndRunActiveView() );
+				el.on('click', '*', async ev => await this.buildAndRunActiveView() );
 			});
 		}
 
@@ -105,7 +112,10 @@ export default class MeldBuildPlugin extends Plugin {
 		await this.buildAndRun( view.editor, view);
 	}
 
-	private async buildAndRun( editor:Editor, view: MarkdownView ){
+	private async buildAndRun( editor:Editor, view: MarkdownView | MarkdownFileInfo ){
+		if ( !( view instanceof MarkdownView ) ){
+			return;
+		}
 		const logger = new RunLogger();
 		try{
 			//await view.save();

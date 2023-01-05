@@ -14,8 +14,8 @@
 	"devDependencies": {
 		"@types/handlebars": "^4.1.0",
 		"@types/node": "^16.11.6",
-		"@typescript-eslint/eslint-plugin": "5.29.0",
-		"@typescript-eslint/parser": "5.29.0",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest",
 		"builtin-modules": "3.3.0",
 		"esbuild": "0.14.47",
 		"esbuild-copy-static-files": "^0.1.0",
