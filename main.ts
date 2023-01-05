@@ -2,6 +2,7 @@ import { Editor, MarkdownView, moment, Notice, Plugin } from 'obsidian';
 import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
+import { CODE_BLOCK_LANG_TOOLBAR } from 'src/constants';
 
 interface MeldBuildPluginSettings {
 	mySetting: string;
@@ -11,16 +12,12 @@ const DEFAULT_SETTINGS: MeldBuildPluginSettings = {
 	mySetting: 'default'
 }
 
-const CODE_BLOCK_LANG_TOOLBAR = 'meld-build-toolbar';
-
 export default class MeldBuildPlugin extends Plugin {
 	settings: MeldBuildPluginSettings;
 
 
 	async onload() {
 		
-		//console.debug((app as any).commands.commands);
-
 		await this.loadSettings();
 
 		await this.reloadActiveViewsWithToolbars();
