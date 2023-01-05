@@ -8,11 +8,11 @@ For example, here is a JavaScript codeblock which will display a message box wit
 await $.ui.message( 56 / 5 );
 ```
 ````
-To run it, select the 'Meld-Build: Run' command from the command pallette.
+To run it, select the `Meld-Build: Run` command from the command pallette.
 
-Notice that the JavaScript codeblock above is accompanied with the text 'meld-build'. This allows the plugin to sandbox and run the code within.
+Notice that the `JavaScript` codeblock above is accompanied with the text `meld-build`. This allows the plugin to sandbox and run the code within.
 
-The '$' accessor provides a way to use the meld-build API (See below).
+The `$` accessor provides a way to use the meld-build API (See below).
 
 ## What happens when a note is run?
 
