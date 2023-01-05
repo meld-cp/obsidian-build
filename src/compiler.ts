@@ -24,7 +24,11 @@ export class Compiler{
 		// build context
 		const context = this.build_run_context(logger, editor, fileCache, view);
 
-		//console.debug(context.sourceCode);
+		if (context == null){
+			return () => new Notice('No JavaScript blocks were found marked with "meld-build"');
+		}
+
+		//console.debug({sourceCode:context.sourceCode});
 
 		// return runner
 		return () => this.buildSandboxedRunnerFunction(context);
@@ -36,23 +40,37 @@ export class Compiler{
 		editor: Editor,
 		fileCache:CachedMetadata,
 		view: MarkdownView
-	) : TRunContext {
+	) : TRunContext | null {
 		const pzr = new Parser();
 		
 		// data
 		const data = pzr.fetchData(editor, fileCache);
 
-		// code
-		const codeBlocks = pzr.fetchCodeBlocks( editor, fileCache, ['js', 'javascript'] );
 
-		// templates
-		const templateBlocks = pzr.fetchCodeBlocks( editor, fileCache, this.templateLanguages );
+		// code blocks
+		const allCodeBlocks =  pzr.fetchCodeBlocks( editor, fileCache );
 
+		// runable code blocks
+		const runableCodeBlocks = allCodeBlocks
+			.filter( cb =>
+				['js', 'javascript'].contains( cb.info.language)
+				&& cb.info.params.contains('meld-build')
+			)
+		;
+		if (runableCodeBlocks.length == 0){
+			return null;
+		}
 
 		// source code
-		const sourceCode = codeBlocks.map( e=>e.content ).join('\n');
+		const sourceCode = runableCodeBlocks.map( e=>e.content ).join('\n');
 
-		//console.debug({sourceCode});
+		// templates
+		const templateBlocks = allCodeBlocks
+			.filter( cb =>
+				this.templateLanguages.contains( cb.info.language)
+			)
+		;
+
 
 		return {
 			sourceCode: sourceCode,

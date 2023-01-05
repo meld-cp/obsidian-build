@@ -8,7 +8,7 @@ export class Parser {
 	public fetchCodeBlocks(
 		editor: Editor,
 		fileCache: CachedMetadata | undefined,
-		languages :string[]
+		languages? : string[]
 	): NamedCodeBlock[] {
 		const result: NamedCodeBlock[] = [];
 		
@@ -50,7 +50,7 @@ export class Parser {
 				return;
 			}
 
-			if ( !languages.contains( codeBlockInfo.language ) ){
+			if ( languages &&  !languages.contains( codeBlockInfo.language ) ){
 				return;
 			}
 
