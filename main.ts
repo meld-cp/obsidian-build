@@ -121,7 +121,7 @@ export default class MeldBuildPlugin extends Plugin {
 			//await view.save();
 			const compiler = new Compiler();
 			const runner = compiler.compile(logger, editor, view);
-			runner();
+			runner?.();
 		}catch(e){
 			console.debug('here');
 			await logger.error(e);

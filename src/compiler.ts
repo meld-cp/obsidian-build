@@ -12,12 +12,12 @@ import { IoRunContextImplemention } from "./rci-io";
 
 export class Compiler{
 
-	public compile( logger: RunLogger, editor: Editor, view: MarkdownView ) : () => void {
+	public compile( logger: RunLogger, editor: Editor, view: MarkdownView ) : (() => void) | null {
 
 		const fileCache = app.metadataCache.getFileCache(view.file);
 
 		if (fileCache == null){
-			return () => {};
+			return null;
 		}
 
 		// build context
