@@ -24,7 +24,7 @@ export type TRunContext = {
 
 }
 
-type TUiRunContext = {
+export type TUiRunContext = {
 	notice( message: string | DocumentFragment, timeout?: number ) : void;
 	rebuild() : Promise<void>;
 	message(
@@ -38,14 +38,14 @@ type TUiRunContext = {
 	) : Promise<string|undefined>;
 }
 
-type TIoRunContext = {
+export type TIoRunContext = {
 	import( path:string ) : Promise<boolean>;
 	load( path:string ) : Promise<string|undefined>;
 	load_data( path:string, name?:string ) : Promise<DataSet>;
 	load_data_url( path:string, mimetype?:string ) : Promise<string|undefined>;
-	output( file:string, content:string, open?:boolean ) : void;
-	open( linktext:string ) : void;
-	delete( path:string ) : void;
+	output( file:string, content:string, open?:boolean ) : Promise<void>;
+	open( linktext:string ) : Promise<void>;
+	delete( path:string ) : Promise<void>;
 }
 
 export type TAssertRunContext = {
