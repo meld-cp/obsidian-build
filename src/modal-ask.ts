@@ -63,7 +63,6 @@ export class AskModal extends Modal {
 							this.answer = answer;
 							this.close();
 						}
-						//console.log(ev);
 					})
 				;
 			});

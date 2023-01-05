@@ -14,6 +14,8 @@ export type TRunContext = {
 	log( ...params: any[] ) : Promise<void>;
 	render( template:string|NamedCodeBlock, data:any ) : string;
 
+	assert:TAssertRunContext;
+
 	ui: TUiRunContext;
 
 	io: TIoRunContext;
@@ -44,4 +46,12 @@ type TIoRunContext = {
 	output( file:string, content:string, open?:boolean ) : void;
 	open( linktext:string ) : void;
 	delete( path:string ) : void;
+}
+
+export type TAssertRunContext = {
+	isDefined( value:any, label?:string  ) : Promise<void>;
+	isTrue( value:any, label?:string  ) : Promise<void>;
+	isFalse( value:any, label?:string  ) : Promise<void>;
+	eq( expected:any, actual:any, label?:string ) : Promise<void>;
+	neq( expected:any, actual:any, label?:string ) : Promise<void>;
 }

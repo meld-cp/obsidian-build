@@ -1,3 +1,5 @@
+import { CODE_BLOCK_LANG_TOOLBAR } from "./constants";
+
 export class CodeBlockInfo{
 	
 	public language:string;
@@ -21,7 +23,9 @@ export class CodeBlockInfoHelper {
 	}
 
 	public static isConsumable( info: CodeBlockInfo ) : boolean{
-		return info.params.at(0) !== 'meld-build';
+		return info.language != CODE_BLOCK_LANG_TOOLBAR
+			&& info.params.at(0) !== 'meld-build'
+		;
 	}
 
 }

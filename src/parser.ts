@@ -20,9 +20,7 @@ export class Parser {
 			return result;
 		}
 		
-		//console.log(fileCache.sections);
 		const codeBlocks = fileCache.sections?.filter( s => ['heading','code'].contains( s.type ) ) ?? [];
-		//console.debug({codeBlocks});
 
 		let cbName = '';
 		codeBlocks.forEach( codeBlockSection => {
@@ -31,8 +29,6 @@ export class Parser {
 			const to = editor.offsetToPos( codeBlockSection.position.end.offset );
 			const content = editor.getRange( from, to );
 			
-			//console.debug(content);
-
 			if ( codeBlockSection.type == 'heading' ){
 				cbName = this.extractHeaderName(content);
 				return;
@@ -75,21 +71,23 @@ export class Parser {
 			```` multitick				=> { language: 'multitick', params:[] }
 			````multitick with space	=> { language: 'multitick', params:['with','space'] }
 		*/
-		const matches = line.match(/````*\s*([a-z0-9-]+)(?:\s*([a-z0-9-]+))*/i);
+		const codeBlockMatch = line.match(/````*\s*([\w\s\\-]*)/);
+		//const matches = line.match(/````*/i);
 		
-		//console.debug(matches);
-
-		if ( matches == null ){
+		if ( codeBlockMatch == null || codeBlockMatch.length < 1 ){
 			return null;
 		}
 
-		const lang = matches.at(1);
+		const langAndParamsText = codeBlockMatch[1];
+
+		const langAndParamsMatches = langAndParamsText.split(/\s/);
+
+		const lang = langAndParamsMatches.at(0);
 		if ( lang === undefined ){
 			return null;
 		}
 
-		const params:string[] = matches.slice(2).filter( e => e );
-		//console.debug({params});
+		const params:string[] = langAndParamsMatches.slice(1).filter( e => e !== undefined );
 		
 		return new CodeBlockInfo( lang, params );
 	}
@@ -133,7 +131,6 @@ export class Parser {
 	) : void {
 
 		const lines = content.split('\n');
-		//console.debug(lines);
 
 		let currentHeader = '';
 		for ( let i = 0; i < lines.length; i++ ) {
@@ -191,7 +188,6 @@ export class Parser {
 		const tlines = tableLines
 		.map( e=>e.trim().slice(1,-1).trim());
 
-		//console.debug(tableLines);
 		const columns = tlines
 			.first()?.split('|')
 			.map( e=> this.extractAsColumnName(e) )
@@ -201,7 +197,6 @@ export class Parser {
 
 		for (let i = 1; i < tlines.length; i++) {
 			const rowLine = tlines[i];
-			//console.debug(line);
 			if (rowLine.startsWith('---') ){
 				continue;
 			}
@@ -236,7 +231,6 @@ export class Parser {
 			if ( section.type == 'heading' ){
 				headingIdx++;
 				lastHeading = fileCache.headings?.at(headingIdx)?.heading ?? '?';
-				//console.debug({lastHeading});
 			} 
 			if ( section.type == 'table' ){
 
@@ -293,7 +287,7 @@ export class Parser {
 	
 	private extractValueFromString( str:string ) : string | number | Date {
 		const trimmed = str.trim();
-		//console.debug({trimmed});
+
 		//see: https://rgxdb.com/r/526K7G5W
 		
 		if ( this.looksLikeDate(trimmed) ){

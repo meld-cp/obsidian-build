@@ -7,7 +7,7 @@ import { Utils } from 'src/utils';
 import { DataSet, IDataSetCollection } from "src/data-set";
 import { Parser } from "src/parser";
 import { RunLogger } from 'src/run-logger';
-import { TRunContext } from "src/run-context";
+import { TAssertRunContext, TRunContext } from "src/run-context";
 import { NamedCodeBlock } from "./named-code-block";
 import { CodeBlockInfoHelper } from "./code-block-info";
 
@@ -25,10 +25,8 @@ export class Compiler{
 		const context = this.build_run_context(logger, editor, fileCache, view);
 
 		if (context == null){
-			return () => new Notice('No JavaScript blocks were found marked with "meld-build"');
+			return () => new Notice( 'No JavaScript blocks were found marked with "meld-build"' );
 		}
-
-		//console.debug({sourceCode:context.sourceCode});
 
 		// return runner
 		return () => this.buildSandboxedRunnerFunction(context);
@@ -44,8 +42,7 @@ export class Compiler{
 		const pzr = new Parser();
 		
 		// data
-		const data = pzr.fetchData(editor, fileCache);
-
+		const data = pzr.fetchData( editor, fileCache );
 
 		// code blocks
 		const allCodeBlocks =  pzr.fetchCodeBlocks( editor, fileCache );
@@ -59,7 +56,7 @@ export class Compiler{
 		}
 
 		// source code
-		const sourceCode = runableCodeBlocks.map( e=>e.content ).join('\n');
+		const sourceCode = runableCodeBlocks.map( e => e.content ).join('\n');
 
 		// consumable blocks
 		const consumableBlocks = allCodeBlocks
@@ -86,6 +83,8 @@ export class Compiler{
 
 				return '';
 			},
+
+			assert: new AssertImplemention(),
 
 			ui: {
 				notice(msg, timeout) {
@@ -114,7 +113,7 @@ export class Compiler{
 					}
 
 					await m.execute(title, msg);
-					//console.log('message, after open');
+
 				},
 
 				async ask(
@@ -122,7 +121,7 @@ export class Compiler{
 					questionOrOptions?:string|string[],
 					options?:string[]
 				) : Promise<string|undefined> {
-					//console.log({titleOrQuestion, questionOrOptions, options});
+
 					const m = new AskModal(app);
 
 					let finTitle: string;
@@ -244,9 +243,8 @@ export class Compiler{
 			return resultDataSet;
 		}
 
-		//console.debug({filepath, name, absFilepath});
 		const file = app.vault.getAbstractFileByPath(absFilepath);
-		//console.debug({file});
+
 		const pzr = new Parser();
 		if (file instanceof TFile){
 			if (file.extension == 'csv'){
@@ -256,7 +254,6 @@ export class Compiler{
 			}
 		}
 		
-		//console.log('loaded');
 		return resultDataSet;
 	}
 
@@ -267,8 +264,6 @@ export class Compiler{
 		path:string
 	) : Promise<boolean>{
 		
-		//console.log('import');
-
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(path);
 		if (!absFilepath){
 			log.error(`import::Unable to get file path from active file: "${path}"`);
@@ -284,7 +279,6 @@ export class Compiler{
 
 		if ( file.extension == 'md' ){
 			const content = await app.vault.read( file );
-			//console.log({content});
 			const pzr = new Parser();
 			pzr.applyMarkdownContent(
 				file.basename,
@@ -384,7 +378,60 @@ export class Compiler{
 		);
 
 	}
-	
 
+}
+
+class AssertImplemention implements TAssertRunContext{
+
+	private async showFailMessage( label:string, msg:string ) : Promise<void>{
+		const title = '❗ Assert Failed' + ( label.length > 0 ? ` - ${label}` : '' );
+		const m = new MessageModal(app);
+		await m.execute( title, msg );
+	}
+
+	public async isDefined( value:any, label?:string  ) : Promise<void> {
+		if ( value != undefined && value != null ){
+			return;
+		}
+		const msg = `Value is not defined`;
+		this.showFailMessage( label ?? '', msg );
+		throw msg;
+	}
+	
+	public async isTrue( value:any, label?:string  ) : Promise<void> {
+		if ( value ){
+			return;
+		}
+		const msg = `Value was expected to be truthy`;
+		this.showFailMessage( label ?? '', msg );
+		throw msg;
+	}
+
+	public async isFalse( value:any, label?:string  ) : Promise<void> {
+		if ( !value ){
+			return;
+		}
+		const msg = `Value was expected to be falsy`;
+		this.showFailMessage( label ?? '', msg );
+		throw msg;
+	}
+
+	public async eq( expected:any, actual:any, label?:string ) : Promise<void> {
+		if ( expected == actual ){
+			return;
+		}
+		const msg = `Expected: '${expected}' but got '${actual}'`;
+		this.showFailMessage( label ?? '', msg );
+		throw msg;
+	}
+
+	public async neq( expected:any, actual:any, label?:string ) : Promise<void> {
+		if ( expected != actual ){
+			return;
+		}
+		const msg = `Values are equal`;
+		this.showFailMessage( label ?? '', msg );
+		throw msg;
+	}
 
 }
