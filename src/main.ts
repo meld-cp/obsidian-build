@@ -96,12 +96,6 @@ export default class MeldBuildPlugin extends Plugin {
 				(view.leaf as any).rebuildView();		
 			}
 		});
-		//const view = app.workspace.getActiveViewOfType( MarkdownView );
-		//if (view == null){
-		//	return;
-		//}
-
-		
 	}
 
 	private async buildAndRunActiveView(){
@@ -134,13 +128,16 @@ export default class MeldBuildPlugin extends Plugin {
 		// register handlebar helpers
 		HB.registerHelper('format_number', function (value, options) {
 			// Helper parameters
-			const dp:number = parseInt( options.hash['decimal_places'] ) || parseInt( options.hash['dp'] ) || 2;
+			const dp:number = parseInt( options.hash['decimal_places'] )
+				|| parseInt( options.hash['dp'] )
+				|| 2
+			;
 		
 			// Parse to float
-			value = parseFloat(value);
+			const num = parseFloat(value);
 		
 			// Returns the formatted number
-			return value.toFixed(dp);
+			return num.toFixed(dp);
 		});
 		
 		HB.registerHelper('format_date', function (value, options) {
@@ -150,21 +147,6 @@ export default class MeldBuildPlugin extends Plugin {
 			// Returns the formatted date
 			return moment(value).format(pattern);
 		});
-		
-		//HB.registerHelper('data_uri', function (value, options) {
-			//TODO
-			// Helper parameters
-			//const file = options.hash['file'] as string;
-			//const contentType = options.hash['content_type'] as string;
-		
-			// check if file exists
-			// convert file to data uri
-			
-		//});
-
-	}
-
-	onunload() {
 
 	}
 
