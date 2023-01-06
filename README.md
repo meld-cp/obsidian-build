@@ -1,6 +1,6 @@
 # Meld Build - An Obsidian Plugin
 
-Write and execute JavaScript in code blocks to render templates, query DataView and create dynamic notes.
+Write and execute (sandboxed) JavaScript to render templates, query DataView and create dynamic notes.
 
 Basically, turn a note into a small, simple, runnable thing.
 

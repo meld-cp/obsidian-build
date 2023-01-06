@@ -152,7 +152,7 @@ You can use `$.assert` to stop the run and show a message if a test fails.
 ### Examples
 ```js meld-build
 const template = $.blocks.at(1);
-// will stop with a message if there is no 2nd block
+// will stop with a message if there's no 2nd block
 await $.assert.isDefined( template, 'template' );
 
 ```

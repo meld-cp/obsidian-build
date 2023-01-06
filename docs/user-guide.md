@@ -2,7 +2,7 @@
 
 The Meld-Build plugin can be used to turn a note into a small, simple, runnable thing.
 
-For example, here is a JavaScript codeblock which will display a message box with the result of a simple calculation:
+For example, here's a JavaScript codeblock which will display a message box with the result of a simple calculation:
 ````md
 ```js meld-build
 await $.ui.message( 56 / 5 );
@@ -36,7 +36,7 @@ _TODO: add screenshot_
 
 One of the main features of `meld-build` is the built-in templating (provided by [Handlebars](https://handlebarsjs.com/)).
 
-Here is an example:
+Here's an example:
 ````md
 ```js meld-build
 const mytemplate = 'Hello {{name}}';
@@ -123,6 +123,9 @@ x = 2;
 await $.ui.message(x);
 ```
 ````
+
+## Other
+- It's recommended to turn `on` the `Files & Links > Detect all file extensions` option in Obsidian.  This will make working with files for templating easier.
 
 ## More Information
 
