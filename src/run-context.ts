@@ -14,11 +14,13 @@ export type TRunContext = {
 	log( ...params: any[] ) : Promise<void>;
 	render( template:string|NamedCodeBlock, data:any ) : string;
 
-	assert:TAssertRunContext;
+	assert: TAssertRunContext;
 
 	ui: TUiRunContext;
 
 	io: TIoRunContext;
+
+	markers: TMarkerRunContext;
 
 	dv: DataviewApi | undefined;
 
@@ -55,3 +57,60 @@ export type TAssertRunContext = {
 	eq( expected:any, actual:any, label?:string ) : Promise<void>;
 	neq( expected:any, actual:any, label?:string ) : Promise<void>;
 }
+
+export type TMarkerRunContext = {
+	// mark_start_prefix: string;
+	// mark_start_suffix: string;
+	// mark_end_prefix: string;
+	// mark_end_suffix: string;
+
+	// target_path: string | null;
+
+	define_mark_start( prefix:string, suffix:string ) : void;
+	define_mark_end( prefix:string, suffix:string ) : void;
+
+	target_file( path?:string ) : void;
+
+	clear() : void;
+
+	set( name:string, value:any ): void;
+
+	fetch() : Promise<MarkerValue[]>;
+
+	apply( keepUnknownMarkers?:boolean ) : Promise<MarkerChange[]>;
+}
+
+// export class MarkerLocation{
+// 	line: number;
+// 	pos: number;
+// 	constructor( line:number, pos: number ){
+// 		this.line = line;
+// 		this.pos = pos;
+// 	}
+// }
+
+export class MarkerValue {
+	posIndex: number;
+	name: string;
+	value: string;
+	constructor( posIndex: number, name:string, value:string ){
+		this.posIndex = posIndex;
+		this.name = name;
+		this.value = value;
+	}
+}
+
+export class MarkerChange{
+	posIndex: number;
+	name: string;
+	old: string;
+	new: string;
+
+	constructor( posIndex: number, name:string, oldValue:string, newValue:string ){
+		this.posIndex = posIndex;
+		this.name = name;
+		this.old = oldValue;
+		this.new = newValue;
+	}
+}
+

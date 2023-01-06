@@ -1,4 +1,4 @@
-import { CachedMetadata, Editor, MarkdownView, Notice } from "obsidian";
+import { CachedMetadata, Editor, MarkdownView, Notice, TFile } from "obsidian";
 import {getAPI as dvGetAPI} from "obsidian-dataview";
 import * as HB from  'handlebars';
 import { Parser } from "src/parser";
@@ -9,6 +9,7 @@ import { CodeBlockInfoHelper } from "./code-block-info";
 import { AssertRunContextImplemention } from "./rci-assert";
 import { UiRunContextImplemention } from "./rci-ui";
 import { IoRunContextImplemention } from "./rci-io";
+import { MarkerRunContextImplemention } from "./rci-markers";
 
 export class Compiler{
 
@@ -21,7 +22,7 @@ export class Compiler{
 		}
 
 		// build context
-		const context = this.build_run_context(logger, editor, fileCache );
+		const context = this.build_run_context(logger, editor, view.file, fileCache );
 
 		if (context == null){
 			return function() {
@@ -92,6 +93,7 @@ export class Compiler{
 	private build_run_context(
 		log: RunLogger,
 		editor: Editor,
+		file: TFile,
 		fileCache:CachedMetadata,
 	) : TRunContext | null {
 		const pzr = new Parser();
@@ -144,6 +146,8 @@ export class Compiler{
 			ui: new UiRunContextImplemention(),
 			
 			io: new IoRunContextImplemention( log, data, consumableBlocks ),
+
+			markers: new MarkerRunContextImplemention(log, file.path ),
 
 			dv: dvGetAPI(),
 		}
