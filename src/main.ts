@@ -107,9 +107,10 @@ export default class MeldBuildPlugin extends Plugin {
 	private async buildAndRunActiveView(){
 		const view = app.workspace.getActiveViewOfType( MarkdownView );
 		if (!view){
+			new Notice( 'Unable to run, no active Markdown View found' );
 			return;
 		}
-		await this.buildAndRun( view.editor, view);
+		await this.buildAndRun( view.editor, view );
 	}
 
 	private async buildAndRun( editor:Editor, view: MarkdownView | MarkdownFileInfo ){
