@@ -19,7 +19,7 @@ The `$` accessor provides a way to use the `meld-build` [API](api.md).
 Within the current note:
 - All tables are parsed and added to the `$.data` array.
 - All non-`meld-build` blocks are added to the `$.blocks` array.
-- All `JavaScript` blocks with `meld-build` are concatenated, sandboxed and executed.
+- `JavaScript` blocks with `meld-build` are concatenated, sandboxed and executed.
 
 ## Toolbar
 
@@ -73,7 +73,7 @@ await $.ui.message( result );
 
 Running this note will show a message with the following text: 'Greetings **John**, How are you?'
 
-See the `$.io.import` and `$.io.load` API functions for other ways to load templates.
+See the `$.io.import` and `$.io.load` [API](api.md) functions for other ways to load templates.
 
 ## Accessing the DataView plugin API
 

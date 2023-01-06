@@ -1,8 +1,13 @@
 
 # Guess The Number Game
 
+Copy and paste the codeblock below into a new note to try it out.
+
 ````md
 # Guess The Number Game
+
+This example plays the clasic guess the number game.  You are told if your guess is too high, too low, or just right.
+
 ```meld-build-toolbar
 run = Let The Games Begin
 help =
@@ -12,7 +17,7 @@ help =
 const min = 1;
 const max = 100;
 
-// choose a rundom number between min and max
+// choose a random number between min and max
 const number = min + Math.round( Math.random() * (max-min) );
 
 let guessCount = 0;

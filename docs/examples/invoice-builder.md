@@ -1,10 +1,41 @@
 # A Simple Invoice Builder
 
+Copy and paste the codeblock below into a new note to try it out.
+
+
 ````md
 # A Simple Invoice Builder
+
+This example will produce and open an `HTML` file representing a simple invoice.  From your default web browser, it can then be saved as a PDF.
+
+## Choose the invoice to build
+```js meld-build
+const invNumber = '22001';
+```
 ```meld-build-toolbar
 run = Build the Invoice
 help =
+```
+
+## The Data defined as JavaScript
+```js meld-build
+// Define the customers
+const customers = [
+	{ id: 100, name: 'Some Co', address: ['123 Some Rd', 'Some City'] },
+	{ id: 101, name: 'Some Other Co', address: ['123 Some Other Rd', 'Some City'] },
+]
+
+// Define the invoices their lines
+const invoices = [
+	{
+		id: '22001', customer:100, date: '2022-12-01', status: 'open',
+		work: [
+			{ inv: '22001', date: '2022-11-13', start: 7.00, end: 16.50, rate: 25.45, desc: 'I did the thing' },
+			{ inv: '22001', date: '2022-11-16', start: 10.75, end: 12.00, rate: 25.45, desc: 'I did the other thing' },
+		]
+	},
+]
+
 ```
 
 ## The invoice template
@@ -59,25 +90,8 @@ help =
 </html>
 ```
 
-## The code to run
+## The code to build the invoice
 ```js meld-build
-const invNumber = '22001';
-
-const customers = [
-	{ id: 100, name: 'Some Co', address: ['123 Some Rd', 'Some City'] },
-	{ id: 101, name: 'Some Other Co', address: ['123 Some Other Rd', 'Some City'] },
-]
-
-const invoices = [
-	{
-		id: '22001', customer:100, date: '2022-12-01', status: 'open',
-		work: [
-			{ inv: '22001', date: '2022-11-13', start: 7.00, end: 16.50, rate: 25.45, desc: 'I did the thing' },
-			{ inv: '22001', date: '2022-11-16', start: 10.75, end: 12.00, rate: 25.45, desc: 'I did the other thing' },
-		]
-	},
-]
-
 // get invoice to generate
 const inv = invoices.filter( e => e.id==invNumber ).at(0);
 // add line calculated fields
