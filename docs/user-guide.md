@@ -1,6 +1,6 @@
 # User Guide
 
-The Meld-Build plugin can be used to turn a note into a small, simple, application.
+The Meld-Build plugin can be used to turn a note into a small, simple, runnable thing.
 
 For example, here is a JavaScript codeblock which will display a message box with the result of a simple calculation:
 ````md

@@ -49,9 +49,9 @@ export type TIoRunContext = {
 }
 
 export type TAssertRunContext = {
-	isDefined( value:any, label?:string  ) : Promise<void>;
-	isTrue( value:any, label?:string  ) : Promise<void>;
-	isFalse( value:any, label?:string  ) : Promise<void>;
+	isDefined( value:any, label?:string ) : Promise<void>;
+	isTrue( value:any, label?:string ) : Promise<void>;
+	isFalse( value:any, label?:string ) : Promise<void>;
 	eq( expected:any, actual:any, label?:string ) : Promise<void>;
 	neq( expected:any, actual:any, label?:string ) : Promise<void>;
 }
