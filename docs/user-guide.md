@@ -3,7 +3,7 @@
 The Meld-Build plugin can be used to turn a note into a small, simple, application.
 
 For example, here is a JavaScript codeblock which will display a message box with the result of a simple calculation:
-````
+````md
 ```js meld-build
 await $.ui.message( 56 / 5 );
 ```
@@ -25,7 +25,7 @@ Within the current note:
 
 To make running `meld-build` codeblocks easier you can add the following codeblock to show a toolbar.
 
-````
+````md
 ```meld-build-toolbar
 ```
 ````
@@ -37,10 +37,13 @@ _TODO: add screenshot_
 One of the main features of `meld-build` is the built-in templating (provided by [Handlebars](https://handlebarsjs.com/)).
 
 Here is an example:
-````
+````md
 ```js meld-build
 const mytemplate = 'Hello {{name}}';
-const result = await $.render( mytemplate, { name:'World' } );
+const mydata = { name:'World' };
+
+const result = await $.render( mytemplate, mydata );
+
 await $.ui.message( result );
 ```
 ````
@@ -48,15 +51,19 @@ await $.ui.message( result );
 There are other ways to load templates too.
 
 For example, using the content of codeblocks.  Say your note looks like this:
-````
+````md
 # My Runable Note
+
 ```html
 <p>Greetings <strong>{{name}}</strong>, {{message}}</p>
 ```
 
 ```js meld-build
 const t = $.blocks.at(0);
-const result = await $.render( t, { name:'John', message:'How are you?' } );
+const d = { name:'John', message:'How are you?' };
+
+const result = await $.render( t, d );
+
 await $.ui.message( result );
 ```
 
