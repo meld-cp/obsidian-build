@@ -20,7 +20,7 @@ await $.ui.message( `From this day forth you shall be known as ${ans}` );
 ```
 ````
 
-## Documentaion
+## Documentation
 
 - [User Guide](/docs/user-guide.md)
 - [API](/docs/api.md)
