@@ -25,7 +25,7 @@
 
 ### Examples
 ```js meld-build
-// console log, info, debug, error etc
+// console log, info, debug, error etc (ctrl + shift + i in windows to open dev tools)
 console.log('standard logging to console');
 
 // also logs to the console
