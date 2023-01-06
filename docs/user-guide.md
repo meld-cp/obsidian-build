@@ -12,7 +12,7 @@ To run it, select the `Meld-Build: Run` command from the command pallette.
 
 Notice that the `JavaScript` codeblock above is accompanied with the text `meld-build`. This tells the plugin to sandbox and run the code within.
 
-The `$` accessor provides a way to use the `meld-build` [API](docs/api.md).
+The `$` accessor provides a way to use the `meld-build` [API](api.md).
 
 ## What happens when a note is run?
 
