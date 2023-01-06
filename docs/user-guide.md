@@ -48,9 +48,9 @@ await $.ui.message( result );
 ```
 ````
 
-There are other ways to load templates too.
+There are other ways to load templates too, for example, using the content of codeblocks.
 
-For example, using the content of codeblocks.  Say your note looks like this:
+Say your note looks like this:
 ````md
 # My Runable Note
 
@@ -61,10 +61,10 @@ The template codeblock:
 
 The meld-build block to run:
 ```js meld-build
-const t = $.blocks.at(0); // gets the first non-meld-build block in the note
-const d = { name:'John', message:'How are you?' };
+const template = $.blocks.at(0); // gets the first non-meld-build block in the note
+const data = { name:'John', message:'How are you?' };
 
-const result = await $.render( t, d );
+const result = await $.render( template, data );
 
 await $.ui.message( result );
 ```
