@@ -10,9 +10,9 @@ await $.ui.message( 56 / 5 );
 ````
 To run it, select the `Meld-Build: Run` command from the command pallette.
 
-Notice that the `JavaScript` codeblock above is accompanied with the text `meld-build`. This allows the plugin to sandbox and run the code within.
+Notice that the `JavaScript` codeblock above is accompanied with the text `meld-build`. This tells the plugin to sandbox and run the code within.
 
-The `$` accessor provides a way to use the meld-build API (See below).
+The `$` accessor provides a way to use the `meld-build` [API](docs/api.md).
 
 ## What happens when a note is run?
 
@@ -97,6 +97,30 @@ For example, running the following codeblock will create (or overwrite) a file n
 ```js meld-build
 const md = $.dv.markdownList( [1, 2, 3] );
 await $.io.output( 'My List.md', md );
+```
+````
+
+## Skipping `meld-build` blocks
+
+If you have multiple `meld-build` codeblocks in a note, you can choose to ignore some by adding `skip` after `meld-build`.
+
+For example, running the following will display the number 0.
+````md
+# My Runable Note
+
+## code block 1
+```js meld-build
+let x = 0;
+```
+
+## code block 2, skipped
+```js meld-build skip
+x = 2;
+```
+
+## code block 3
+```js meld-build
+await $.ui.message(x);
 ```
 ````
 
