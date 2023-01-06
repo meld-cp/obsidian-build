@@ -51,7 +51,7 @@ while ( !done ){
 		// guess was too high
 		prevGuessMsg = `${guessNum} was too high.  `;
 		
-	}else{
+	} else {
 		// guess was correct
 		await $.ui.message(
 			'🥳 YUS!',
