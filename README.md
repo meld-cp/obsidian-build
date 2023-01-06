@@ -5,11 +5,12 @@ Write and execute JavaScript in code blocks to render templates, query DataView 
 ## Documentaion
 
 - [User Guide](/docs/user-guide.md)
+- [API](/docs/api.md)
 
 ### Examples
 
-- [Guess The Number Game](/docs/examples/guess-the-number/readme.md)
-- [Simple Invoice Builder](/docs/examples/invoice-builder/readme.md)
+- [Guess The Number Game](/docs/examples/guess-the-number.md)
+- [Simple Invoice Builder](/docs/examples/invoice-builder.md)
 
 ## Manually installing the plugin
 

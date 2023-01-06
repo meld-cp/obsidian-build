@@ -54,12 +54,14 @@ For example, using the content of codeblocks.  Say your note looks like this:
 ````md
 # My Runable Note
 
+The template codeblock:
 ```html
 <p>Greetings <strong>{{name}}</strong>, {{message}}</p>
 ```
 
+The meld-build block to run:
 ```js meld-build
-const t = $.blocks.at(0);
+const t = $.blocks.at(0); // gets the first non-meld-build block in the note
 const d = { name:'John', message:'How are you?' };
 
 const result = await $.render( t, d );
@@ -69,74 +71,39 @@ await $.ui.message( result );
 
 ````
 
+Running this note will show a message with the following text: 'Greetings **John**, How are you?'
 
-_TODO_
+See the `$.io.import` and `$.io.load` API functions for other ways to load templates.
 
-## Accessing DataView
+## Accessing the DataView plugin API
 
-_TODO_
+If you are fimilar with the [DataView](https://github.com/blacksmithgu/obsidian-dataview) plugin and have it installed, you can access it's [js api](https://blacksmithgu.github.io/obsidian-dataview/api/code-reference/) via the `$.dv.` interface.
 
-
-## Testing
-
-_TODO_
-
-## API
-
-_TODO_
-
-### Logging
-
-_TODO_
-
-#### Examples
-````
-```js
-console.log('test logging to console');
-await $.logger.set_file('Run Log.md');
-await $.log('test logging via $.log');
-await $.logger.info('1','2',[3,4], 5);
+For example:
+````md
+```js meld-build
+// use DataView to fetch all notes within the vault
+const pages = await $.dv.pages();
+... 
 ```
 ````
 
-### UI
+Note that the DataView rendering functions aren't supported, but you can still generate lists and tables using it's [Markdown Dataviews](https://blacksmithgu.github.io/obsidian-dataview/api/code-reference/#markdown-dataviews)
 
-_TODO_
 
-#### Examples
-````
-```js
-// Notice
-$.ui.notice('test notice');
-$.ui.notice('test notice for 2s', 2);
+For example, running the following codeblock will create (or overwrite) a file named 'My List.md' with a list containing 3 items.
 
-// ask
-const ans1 = await $.ui.ask( 'question 1' );
-const ans2 = await $.ui.ask( 'question 2', ['1', '2', '3'] );
-const ans3 = await $.ui.ask( 'Title', 'question 3' );
-const ans4 = await $.ui.ask( 'Title', 'question 4', ['1', '2', '3'] );
-
-// message
-await $.ui.message( `Your answers were:\n\n${ans1}, ${ans2}, ${ans3}, ${ans4}` );
-// message with title
-await $.ui.message( 'A Title', 'A titled <b>message</b>' );
-// number message
-$.ui.message('Math', 13 * 67 );
-
-// reload view
-await $.ui.rebuild();
+````md
+```js meld-build
+const md = $.dv.markdownList( [1, 2, 3] );
+await $.io.output( 'My List.md', md );
 ```
 ````
 
-### IO
+## More Information
 
-_TODO_
+- [API](api.md)
+- Examples
+	- [Guess The Number Game](/docs/examples/guess-the-number.md)
+	- [Simple Invoice Builder](/docs/examples/invoice-builder.md)
 
-#### Examples
-````
-```js
-await $.io.import('some other file.md')
-const dataurl = await $.io.load_data_url('logo.png');
-$.log(dataurl.length);
-```
-````
