@@ -6,7 +6,8 @@ Copy and paste the codeblock below into a new note to try it out.
 ````md
 # A Simple Invoice Builder
 
-This example will produce and open an `HTML` file representing a simple invoice.  From your default web browser, it can then be saved as a PDF.
+This example will produce and open an `HTML` file representing a simple invoice.
+From your default web browser, it can then be saved as a PDF.
 
 ## Choose the invoice to build
 ```js meld-build
@@ -107,7 +108,7 @@ const customer = customers.filter( e => e.id==inv.customer ).at(0);
 // get the invoice template
 const template = $.blocks.at(0);
 
-// renter the template passing in the customer and invoice
+// render the template passing in the customer and invoice
 const html = await $.render( template, { customer, inv } );
 
 // create an html invoice file and open it in the default browser, from there it can be saved as a PDF
