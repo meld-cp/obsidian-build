@@ -50,31 +50,41 @@ export default class MeldBuildPlugin extends Plugin {
 		el: HTMLElement,
 		ctx: MarkdownPostProcessorContext
 	){
+		const buttons : ToolbarButton[] = [];
+
 		const lines = source.split( '\n' );
-		const valueMap = new Map<string,string>();
 		lines.forEach( line => {
-			const pair = line.split( '=' );
-			if( pair.length == 2 ){
-				valueMap.set( pair[0].trim(), pair[1].trim() );
+			const button = ToolbarButton.parse(line);
+			if (!button){
+				return;
 			}
+			buttons.push(button);
 		} );
 
-		const runButtonLabel = valueMap.get('run');
-		const showRunButton = runButtonLabel !== '';
-
-		const helpButtonLabel = valueMap.get('help');
-		const showHelpButton = helpButtonLabel !== '';
-
-		if (showRunButton){
-			el.createEl('button', { text: runButtonLabel ?? 'Run'}, el => {
-				el.on('click', '*', async ev => await this.buildAndRunActiveView() );
-			});
+		if ( buttons.length == 0 ){
+			// add default buttons
+			buttons.push(
+				new ToolbarButton( 'run' ),
+				new ToolbarButton( 'help' )
+			);
 		}
 
-		if (showHelpButton){
-			el.createEl('button', {text: helpButtonLabel ?? '❔', title: 'Help' }, el=>{
-				el.on( 'click', '*', ev => this.openHelp() );
-			} );
+		// render buttons
+		for (const button of buttons) {
+
+			if ( button.id == 'run' ){
+				el.createEl('button', { text: button.label ?? 'Run ▶️' }, el => {
+					el.on('click', '*', async ev => await this.buildAndRunActiveView( button.params.first() ) );
+				});
+				continue;
+			}
+	
+			if ( button.id == 'help' ){
+				el.createEl('button', {text: button.label ?? '❔', title: 'Help' }, el=>{
+					el.on( 'click', '*', ev => this.openHelp() );
+				} );
+				continue;
+			}	
 		}
 	}
 
@@ -98,16 +108,16 @@ export default class MeldBuildPlugin extends Plugin {
 		});
 	}
 
-	private async buildAndRunActiveView(){
+	private async buildAndRunActiveView( runGroupTag?:string ){
 		const view = app.workspace.getActiveViewOfType( MarkdownView );
 		if (!view){
 			new Notice( 'Unable to run, no active Markdown View found' );
 			return;
 		}
-		await this.buildAndRun( view.editor, view );
+		await this.buildAndRun( view.editor, view, runGroupTag );
 	}
 
-	private async buildAndRun( editor:Editor, view: MarkdownView | MarkdownFileInfo ){
+	private async buildAndRun( editor:Editor, view: MarkdownView | MarkdownFileInfo, runGroupTag?:string ){
 		if ( !( view instanceof MarkdownView ) ){
 			return;
 		}
@@ -115,7 +125,7 @@ export default class MeldBuildPlugin extends Plugin {
 		try{
 			//await view.save();
 			const compiler = new Compiler();
-			const runner = compiler.compile(logger, editor, view);
+			const runner = compiler.compile( logger, editor, view, runGroupTag );
 			runner?.();
 		}catch(e){
 			console.debug('here');
@@ -156,5 +166,32 @@ export default class MeldBuildPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+}
+
+class ToolbarButton{
+	id:string;
+	label?: string;
+	params: string[];
+
+	constructor( id:string, label?:string, params?:string[] ){
+		this.id = id;
+		this.label = label;
+		this.params = params ?? [];
+	}
+
+	public static parse( line:string ) : ToolbarButton|null{
+		const pair = line.split( '=' );
+		if( pair.length == 2 ){
+			
+			const buttonParts = pair[0].split( '|' ).map( e => e.trim() );
+			const id = buttonParts.shift() ?? '';
+			const params = buttonParts;
+		
+			const label = pair[1].trim();
+
+			return new ToolbarButton( id, label, params );
+		}
+		return null;
 	}
 }

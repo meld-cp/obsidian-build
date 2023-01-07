@@ -13,7 +13,12 @@ import { MarkerRunContextImplemention } from "./rci-markers";
 
 export class Compiler{
 
-	public compile( logger: RunLogger, editor: Editor, view: MarkdownView ) : (() => void) | null {
+	public compile(
+		logger: RunLogger,
+		editor: Editor,
+		view: MarkdownView,
+		runGroupTag?: string
+	) : (() => void) | null {
 
 		const fileCache = app.metadataCache.getFileCache(view.file);
 
@@ -22,11 +27,14 @@ export class Compiler{
 		}
 
 		// build context
-		const context = this.build_run_context(logger, editor, view.file, fileCache );
+		const context = this.build_run_context( logger, editor, view.file, fileCache, runGroupTag );
 
 		if (context == null){
 			return function() {
-				new Notice( 'No JavaScript blocks were found marked with "meld-build"' );
+				new Notice(
+					'No JavaScript blocks were found marked with "meld-build"'
+					+ ( runGroupTag !=undefined ? ` (Tag group=${runGroupTag})` : '' )
+				);
 			};
 		}
 
@@ -95,6 +103,7 @@ export class Compiler{
 		editor: Editor,
 		file: TFile,
 		fileCache:CachedMetadata,
+		runGroupTag?: string
 	) : TRunContext | null {
 		const pzr = new Parser();
 		
@@ -107,6 +116,7 @@ export class Compiler{
 		// runable code blocks
 		const runableCodeBlocks = allCodeBlocks
 			.filter( cb => CodeBlockInfoHelper.isRunable( cb.info ) )
+			.filter( cb => runGroupTag == undefined || cb.info.params.contains( runGroupTag ) )
 		;
 		if ( runableCodeBlocks.length == 0 ){
 			return null;
