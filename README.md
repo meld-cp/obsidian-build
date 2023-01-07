@@ -28,6 +28,7 @@ await $.ui.message( `From this day forth you shall be known as ${ans}` );
 ### Examples
 
 - [Guess The Number Game](/docs/examples/guess-the-number.md)
+- [Guess The Number Game (Using Markers)](/docs/examples/guess-the-number-marker.md)
 - [Simple Invoice Builder](/docs/examples/invoice-builder.md)
 
 ## Known Issues
