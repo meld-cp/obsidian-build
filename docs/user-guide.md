@@ -65,7 +65,7 @@ help = SOS
 ```
 ````
 
-To define a run buttons which targets codeblock tags, use:
+To define run buttons which target codeblock tags you can do something like:
 ````md
 ```meld-build-toolbar
 run|init = Run the Init Code
