@@ -18,7 +18,7 @@ export class CodeBlockInfoHelper {
 	public static isRunable( info: CodeBlockInfo ):boolean{
 		return ['js', 'javascript'].contains( info.language )
 			&& info.params.at(0) === 'meld-build'
-			&& info.params.at(1) !== 'skip'
+			&& !info.params.contains( 'skip' )
 		;
 	}
 
