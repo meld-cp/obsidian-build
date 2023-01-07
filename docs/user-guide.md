@@ -33,6 +33,7 @@ For instance, the following codeblock is tagged with `init`
 ````md
 ```js meld-build init
 await $.ui.message('This is the init codeblock');
+```
 ````
 
 Multiple codeblocks with the same tag will be concatinated together before running.
@@ -41,6 +42,7 @@ To skip a codeblock all together, use the `skip` tag like this:
 ````md
 ```js meld-build skip
 await $.ui.message("This won't run");
+```
 ````
 ---
 
