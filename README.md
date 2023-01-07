@@ -4,6 +4,8 @@ Write and execute (sandboxed) JavaScript to render templates, query DataView and
 
 Basically, turn a note into a small, simple, runnable thing.
 
+<a href="https://www.buymeacoffee.com/cleon"><img src="https://img.buymeacoffee.com/button-api/?text=&emoji=&slug=meld-build&button_colour=FFDD00&font_colour=000000&font_family=Arial&outline_colour=000000&coffee_colour=ffffff"></a>
+
 ## Quick Start
 - Install and enable the plugin
 - Paste the Markdown below into a new note.
