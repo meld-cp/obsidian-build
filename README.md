@@ -30,9 +30,6 @@ await $.ui.message( `From this day forth you shall be known as ${ans}` );
 - [Guess The Number Game (Using Markers)](/docs/examples/guess-the-number-marker.md)
 - [Simple Invoice Builder](/docs/examples/invoice-builder.md)
 
-## Known Issues
-- If you quickly try to run a note just after some changes, there's a chance that the Obsidian cache hasn't been updated yet.  The workaround for now is to wait a second or two before running a changed note.
-
 ## Manually installing the plugin
 
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/meld-build/`.

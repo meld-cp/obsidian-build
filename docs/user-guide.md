@@ -25,6 +25,25 @@ Within the current note:
 
 ---
 
+## Tagging and Grouping `meld-build` codeblocks
+
+It is possible to tag codeblocks for targeted runs using the `meld-build-toolbar`.
+
+For instance, the following codeblock is tagged with `init`
+````md
+```js meld-build init
+await $.ui.message('This is the init codeblock');
+````
+
+Multiple codeblocks with the same tag will be concatinated together before running.
+
+To skip a codeblock all together, use the `skip` tag like this:
+````md
+```js meld-build skip
+await $.ui.message("This won't run");
+````
+---
+
 ## Toolbar
 
 To make running `meld-build` codeblocks easier you can add the following codeblock to show a toolbar.
@@ -34,7 +53,25 @@ To make running `meld-build` codeblocks easier you can add the following codeblo
 ```
 ````
 
-_TODO: add screenshot_
+By default you will see a `Run` and a `Help` button.
+
+You can configure the labels of buttons like this:
+````md
+```meld-build-toolbar
+run = Run Me!
+help = SOS
+```
+````
+
+To define a run buttons which targets codeblock tags, use:
+````md
+```meld-build-toolbar
+run|init = Run the Init Code
+run|main = Run Code tagged with main
+run = Run the Non-tagged Code
+```
+````
+
 
 ---
 
@@ -157,7 +194,7 @@ await $.ui.message(x);
 
 ## Other
 - It's recommended to turn `on` the `Files & Links > Detect all file extensions` option in Obsidian.  This will make working with files for templating easier.
-
+- Hint: add `//@hide_when_reading` to a `JavaScript` codeblock to hide it in Reading mode.
 ---
 
 ## More Information
