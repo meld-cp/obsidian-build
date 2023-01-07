@@ -7,11 +7,10 @@ Basically, turn a note into a small, simple, runnable thing.
 ## Quick Start
 - Install and enable the plugin
 - Paste the Markdown below into a new note.
-- If you are in Reading or Live Preview modes, click the 'Hi' button.  If you are in Source mode, choose `Meld Build: Run` from the command pallette.
+- If you are in Reading or Live Preview modes, click the 'Run' button.  If you are in Source mode, choose `Meld Build: Run` from the command pallette.
 ````md
 
 ```meld-build-toolbar
-run = Hi
 ```
 
 ```js meld-build
