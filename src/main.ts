@@ -1,4 +1,4 @@
-import { Editor, MarkdownFileInfo, MarkdownPostProcessorContext, MarkdownView, moment, Notice, Plugin } from 'obsidian';
+import { MarkdownFileInfo, MarkdownPostProcessorContext, MarkdownView, moment, Notice, Plugin } from 'obsidian';
 import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
@@ -47,7 +47,7 @@ export default class MeldBuildPlugin extends Plugin {
 		this.addCommand({
 			id: 'run',
 			name: 'Run',
-			editorCallback: async (editor, view) => await this.buildAndRun(editor, view)
+			editorCallback: async (editor, view) => await this.buildAndRun( view )
 		});
 
 		this.addCommand({
@@ -128,10 +128,10 @@ export default class MeldBuildPlugin extends Plugin {
 			new Notice( 'Unable to run, no active Markdown View found' );
 			return;
 		}
-		await this.buildAndRun( view.editor, view, runGroupTag );
+		await this.buildAndRun( view, runGroupTag );
 	}
 
-	private async buildAndRun( editor:Editor, view: MarkdownView | MarkdownFileInfo, runGroupTag?:string ){
+	private async buildAndRun( view: MarkdownView | MarkdownFileInfo, runGroupTag?:string ){
 		if ( !( view instanceof MarkdownView ) ){
 			return;
 		}
@@ -139,7 +139,7 @@ export default class MeldBuildPlugin extends Plugin {
 		try{
 			//await view.save();
 			const compiler = new Compiler();
-			const runner = compiler.compile( logger, editor, view, runGroupTag );
+			const runner = await compiler.compile( logger, view, runGroupTag );
 			runner?.();
 		}catch(e){
 			console.debug('here');

@@ -1,4 +1,4 @@
-import { CachedMetadata, Editor, MarkdownView, Notice, TFile } from "obsidian";
+import { MarkdownView, Notice } from "obsidian";
 import {getAPI as dvGetAPI} from "obsidian-dataview";
 import * as HB from  'handlebars';
 import { Parser } from "src/parser";
@@ -13,21 +13,14 @@ import { MarkerRunContextImplemention } from "./rci-markers";
 
 export class Compiler{
 
-	public compile(
+	public async compile(
 		logger: RunLogger,
-		editor: Editor,
 		view: MarkdownView,
 		runGroupTag?: string
-	) : (() => void) | null {
-
-		const fileCache = app.metadataCache.getFileCache(view.file);
-
-		if (fileCache == null){
-			return null;
-		}
+	) : Promise<(() => void) | null> {
 
 		// build context
-		const context = this.build_run_context( logger, editor, view.file, fileCache, runGroupTag );
+		const context = await this.build_run_context( logger, view, runGroupTag );
 
 		if (context == null){
 			return function() {
@@ -98,20 +91,18 @@ export class Compiler{
 		context.ui.notice(errFrag, 20); 
 	}
 
-	private build_run_context(
+	private async build_run_context(
 		log: RunLogger,
-		editor: Editor,
-		file: TFile,
-		fileCache:CachedMetadata,
+		view: MarkdownView,
 		runGroupTag?: string
-	) : TRunContext | null {
+	) : Promise<TRunContext | null> {
 		const pzr = new Parser();
 		
 		// data
-		const data = pzr.fetchData( editor, fileCache );
+		const data = await pzr.fetchData( view );
 
 		// code blocks
-		const allCodeBlocks =  pzr.fetchCodeBlocks( editor, fileCache );
+		const allCodeBlocks = await pzr.fetchCodeBlocks( view );
 
 		// runable code blocks
 		const runableCodeBlocks = allCodeBlocks
@@ -157,7 +148,7 @@ export class Compiler{
 			
 			io: new IoRunContextImplemention( log, data, consumableBlocks ),
 
-			markers: new MarkerRunContextImplemention(log, file.path ),
+			markers: new MarkerRunContextImplemention(log, view.file.path ),
 
 			dv: dvGetAPI(),
 		}

@@ -1,48 +1,57 @@
 import { DataSet, DataSetRow, IDataSetCollection } from "src/data-set";
-import { CachedMetadata, Editor } from "obsidian";
+import { MarkdownView } from "obsidian";
 import { NamedCodeBlock } from "./named-code-block";
 import { CodeBlockInfo, CodeBlockInfoHelper } from "./code-block-info";
 
 export class Parser {
 
-	public fetchCodeBlocks(
-		editor: Editor,
-		fileCache: CachedMetadata | undefined,
+	public async fetchCodeBlocks(
+		view: MarkdownView,
 		languages? : string[]
-	): NamedCodeBlock[] {
+	): Promise<NamedCodeBlock[]> {
 		const result: NamedCodeBlock[] = [];
 		
-		if ( fileCache == undefined ){
+		const file = view.file;
+		const fileContent = await app.vault.read(file);
+		const fileCache = app.metadataCache.getFileCache( file );
+
+		if ( fileCache == null ){
+			console.debug('Parser::fetchCodeBlocks, fileCache is null');
 			return result;
 		}
 
 		if ( fileCache.sections == undefined ){
+			console.debug('Parser::fetchCodeBlocks, fileCache.sections is undefined');
 			return result;
 		}
 		
-		const codeBlocks = fileCache.sections?.filter( s => ['heading','code'].contains( s.type ) ) ?? [];
+		const headerOrCodeBlockList = fileCache.sections?.filter( s => ['heading','code'].contains( s.type ) ) ?? [];
 
 		let cbName = '';
-		codeBlocks.forEach( codeBlockSection => {
+		headerOrCodeBlockList.forEach( headerOrCodeBlockSection => {
 			
-			const from = editor.offsetToPos( codeBlockSection.position.start.offset );
-			const to = editor.offsetToPos( codeBlockSection.position.end.offset );
-			const content = editor.getRange( from, to );
-			
-			if ( codeBlockSection.type == 'heading' ){
+			const content = fileContent.slice(
+				headerOrCodeBlockSection.position.start.offset,
+				headerOrCodeBlockSection.position.end.offset
+			)
+
+			if ( headerOrCodeBlockSection.type == 'heading' ){
 				cbName = this.extractHeaderName(content);
 				return;
 			}
 
 			// code block
-			const lines = content.split('\n');
+			const lines = content.replaceAll('\r\n', '\n').split('\n');
 			if ( lines.length <= 2 ){
+				//console.debug('Parser::fetchCodeBlocks, codeblock lines <= 2');
 				return;
 			}
 
 			// filter languages
+			console.debug('Parser::fetchCodeBlocks',{lines});
 			const codeBlockInfo = this.extractCodeBlockInfo(lines[0]);
-			if (!codeBlockInfo){
+			if ( codeBlockInfo == null ){
+				console.debug('Parser::fetchCodeBlocks, codeBlockInfo is null', {content});
 				return;
 			}
 
@@ -58,7 +67,7 @@ export class Parser {
 			result.push( codeBlock );
 
 		});
-
+		console.debug('Parser::fetchCodeBlocks', {result});
 		return result;
 	}
 	
@@ -75,6 +84,7 @@ export class Parser {
 		//const matches = line.match(/````*/i);
 		
 		if ( codeBlockMatch == null || codeBlockMatch.length < 1 ){
+			console.debug('Parser::extractCodeBlockInfo, codeBlockMatch is null or length < 1', {codeBlockMatch, line});
 			return null;
 		}
 
@@ -91,17 +101,6 @@ export class Parser {
 		
 		return new CodeBlockInfo( lang, params );
 	}
-
-	// private matchesCodeBlockStart( line:string, languages:string[] ) : boolean {
-		
-	// 	const cbInfo = this.extractCodeBlockInfo(line);
-
-	// 	if ( cbInfo == null ){
-	// 		return false;
-	// 	}
-		
-	// 	return languages.contains( cbInfo?.language );
-	// }
 
 	public loadCsv( csvContent:string ) : DataSet {
 		const lines = csvContent.split('\n').map( e=>e.trim() );
@@ -210,12 +209,16 @@ export class Parser {
 		return data;
 	}
 
-	public fetchData(editor: Editor, fileCache: CachedMetadata | undefined): IDataSetCollection {
+	public async fetchData( view: MarkdownView ): Promise<IDataSetCollection> {
 		const result:{
 			[index:string] : DataSet
 		} = {};
 		
-		if ( fileCache == undefined){
+		const file = view.file;
+		const fileContent = await app.vault.read(file);
+		const fileCache = app.metadataCache.getFileCache( file );
+
+		if ( fileCache == null ){
 			return result;
 		}
 
@@ -234,9 +237,13 @@ export class Parser {
 			} 
 			if ( section.type == 'table' ){
 
-				const from = editor.offsetToPos(section.position.start.offset);
-				const to = editor.offsetToPos(section.position.end.offset);
-				const table = editor.getRange( from, to );
+				// const from = editor.offsetToPos(section.position.start.offset);
+				// const to = editor.offsetToPos(section.position.end.offset);
+				// const table = editor.getRange( from, to );
+				const table = fileContent.slice(
+					section.position.start.offset,
+					section.position.end.offset
+				)
 				const tableLines = table.split('\n');
 				const data = this.parseMdTable(tableLines);
 
