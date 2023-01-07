@@ -4,8 +4,8 @@
 - `$.data.<name>`
 	- Used to access imported Markdown table data.
 	- The `<name>` will be the previous header to the table in the note.
+	- e.g. if you had a header `# My Customers` before a markdown table, `$.data.my_customers` would return the data of that table.
 	- Use `await $.log($.data);` to discover the data object.
-	- e.g. if you had a header `# My Customers` before a markdown table, `$.data.my_customers` would return an array of that table.
 - `$.blocks[]`
 	- An array of non-`meld-build` codeblocks
 	- Can be used as templates
