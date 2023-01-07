@@ -1,7 +1,7 @@
 # Meld-Build API
 
 ## The Context Object (`$`)
-- `$.data[<name>]`
+- `$.data.<name>`
 	- Used to access imported Markdown table data.
 	- The `<name>` will be the previous header to the table in the note.
 	- Use `await $.log($.data);` to discover the data object.
