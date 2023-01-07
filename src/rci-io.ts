@@ -1,4 +1,5 @@
 import { normalizePath, TFile } from "obsidian";
+import { EXTENSION_MIMETYPE_MAP } from "./constants";
 import { DataSet, IDataSetCollection } from "./data-set";
 import { NamedCodeBlock } from "./named-code-block";
 import { Parser } from "./parser";
@@ -103,13 +104,10 @@ export class IoRunContextImplemention implements TIoRunContext {
 			return Promise.resolve(undefined);
 		}
 
-		const finalMimeType = mimetype ?? {
-			'jpg':'image/jpeg',
-			'png':'image/png',
-			'gif':'image/gif',
-			'svg':'image/svg+xml',
-			'css':'text/css'
-		}[af.extension] ?? '';
+		const finalMimeType = mimetype
+			?? EXTENSION_MIMETYPE_MAP.get(af.extension)
+			?? ''
+		;
 
 		const base64Data = Utils.toBase64( await app.vault.readBinary(af) );
 		

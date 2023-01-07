@@ -97,7 +97,7 @@ Read and write vault files.
 - `const dataurl = await $.io.load_data_url( path, mimetype? )`
 	- Encode the contents of a file into a dataurl for use in a template
 	- Optionaly specify the mime type.
-	- Auto mime type mappings are available for the following file extensions: `.jpg`, `.png`, `.gif`, `.svg`, `.css`
+	- Auto mime type mappings are available for the following common file extensions: `.jpeg`, `.jpg`, `.png`, `.gif`, `.svg`, `.css`
 - `await $.io.output( file, content, open? )`
 	- (Over)Writes the `file` with given `content`
 	- Tries to open the `file` if `open` is true (false by default)
