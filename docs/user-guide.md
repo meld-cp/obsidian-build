@@ -132,7 +132,7 @@ For example, when the following note is run, the `replace me` will be replaced w
  %%my marker=%%replace me%%=my marker%%
 
 ```js meld-build
-$.markers.set('my marker', Math.random() );
+$.markers.set( 'my marker', Math.random() );
 await $.markers.apply();
 ```
 ````
@@ -150,7 +150,6 @@ For example:
 ```js meld-build
 // use DataView to fetch all notes within the vault
 const pages = await $.dv.pages();
-... 
 ```
 ````
 
@@ -163,32 +162,6 @@ For example, running the following codeblock will create (or overwrite) a file n
 ```js meld-build
 const md = $.dv.markdownList( [1, 2, 3] );
 await $.io.output( 'My List.md', md );
-```
-````
-
----
-
-## Skipping `meld-build` blocks
-
-If you have multiple `meld-build` codeblocks in a note, you can choose to ignore some by adding `skip` after `meld-build`.
-
-For example, running the following will display the number 0.
-````md
-# My Runable Note
-
-## code block 1
-```js meld-build
-let x = 0;
-```
-
-## code block 2, skipped
-```js meld-build skip
-x = 2;
-```
-
-## code block 3
-```js meld-build
-await $.ui.message(x);
 ```
 ````
 
