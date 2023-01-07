@@ -10,8 +10,8 @@ run = Let The Games Begin
 help =
 ```
 
-Guess Number: %%round=%%7%%=round%%
-Your last guess was: %%last=%%47%%=last%%, **%%msg=%%🥳 YUS! You win!%%=msg%%**
+Guess Number: %%round=%%%%=round%%
+Your last guess was: %%last=%%%%=last%%, **%%msg=%%%%=msg%%**
 
 ```js meld-build
 const min = 1;
@@ -52,7 +52,6 @@ while ( !done ){
 		}
 		
 		$.markers.set('last', guessNum );
-		//console.log($.markers.newValues);
 
 		if( guessNum < number ){
 			// guess was too low
