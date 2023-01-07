@@ -26,13 +26,13 @@ const customers = [
 	{ id: 101, name: 'Some Other Co', address: ['123 Some Other Rd', 'Some City'] },
 ]
 
-// Define the invoices their lines
+// Define the invoices and their lines
 const invoices = [
 	{
 		id: '22001', customer:100, date: '2022-12-01', status: 'open',
 		work: [
-			{ inv: '22001', date: '2022-11-13', start: 7.00, end: 16.50, rate: 25.45, desc: 'I did the thing' },
-			{ inv: '22001', date: '2022-11-16', start: 10.75, end: 12.00, rate: 25.45, desc: 'I did the other thing' },
+			{ date: '2022-11-13', start: 7.00, end: 16.50, rate: 25.45, desc: 'I did the thing' },
+			{ date: '2022-11-16', start: 10.75, end: 12.00, rate: 25.45, desc: 'I did the other thing' },
 		]
 	},
 ]
