@@ -104,17 +104,17 @@ export class Compiler{
 		// code blocks
 		const allCodeBlocks = await pzr.fetchCodeBlocks( view );
 
-		// runable code blocks
-		const runableCodeBlocks = allCodeBlocks
-			.filter( cb => CodeBlockInfoHelper.isRunable( cb.info ) )
+		// runnable code blocks
+		const runnableCodeBlocks = allCodeBlocks
+			.filter( cb => CodeBlockInfoHelper.isRunnable( cb.info ) )
 			.filter( cb => runGroupTag == undefined || cb.info.params.contains( runGroupTag ) )
 		;
-		if ( runableCodeBlocks.length == 0 ){
+		if ( runnableCodeBlocks.length == 0 ){
 			return null;
 		}
 
 		// source code
-		const sourceCode = runableCodeBlocks.map( e => e.content ).join('\n');
+		const sourceCode = runnableCodeBlocks.map( e => e.content ).join('\n');
 
 		// consumable blocks
 		const consumableBlocks = allCodeBlocks

@@ -97,7 +97,7 @@ There are other ways to load templates too, for example, using the content of co
 
 Say your note looks like this:
 ````md
-# My Runable Note
+# My Runnable Note
 
 The template codeblock:
 ```html
