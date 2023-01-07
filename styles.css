@@ -5,3 +5,7 @@
 	grid-auto-flow: column;
 	justify-content: start;
 }
+
+.markdown-reading-view .block-language-meld-build-toolbar{
+	padding:0.5em 0;
+}

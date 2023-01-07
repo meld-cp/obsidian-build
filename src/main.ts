@@ -16,6 +16,19 @@ export default class MeldBuildPlugin extends Plugin {
 	settings: MeldBuildPluginSettings;
 
 
+	private async codeblockProcessor(el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
+		const els = el.querySelector('.language-js');
+		
+		if ( els == null ){
+			return;
+		}
+
+		if ( els.getText().contains( '//@hide_when_reading' ) ){
+			console.debug('Hiding element',{el});
+			el.hide();
+		}
+	}
+
 	async onload() {
 		
 		await this.loadSettings();
@@ -29,6 +42,7 @@ export default class MeldBuildPlugin extends Plugin {
 			( source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext ) => this.processToolbarRender( source, el, ctx )
 		);
 
+		this.registerMarkdownPostProcessor( this.codeblockProcessor );
 
 		this.addCommand({
 			id: 'run',
@@ -195,3 +209,4 @@ class ToolbarButton{
 		return null;
 	}
 }
+
