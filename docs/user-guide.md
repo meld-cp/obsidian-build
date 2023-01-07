@@ -129,7 +129,7 @@ It is possible to mark sections of a note with start and end markers.  These sec
 For example, when the following note is run, the `replace me` will be replaced with a random number.
 
 ````md
- %%my marker=%%replace me%%=my marker%%
+%%my marker=%%replace me%%=my marker%%
 
 ```js meld-build
 $.markers.set( 'my marker', Math.random() );
