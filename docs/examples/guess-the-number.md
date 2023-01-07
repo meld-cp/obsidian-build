@@ -23,9 +23,9 @@ const number = min + Math.round( Math.random() * (max-min) );
 let guessCount = 0;
 let prevGuessMsg = '';
 let done = false;
+
 // main game loop
 while ( !done ){
-	
 	guessCount++;
 	
 	// ask the user for a guess
@@ -38,28 +38,34 @@ while ( !done ){
 	if ( isNaN(guessNum) ){
 		// user input wasn't a number
 		await $.ui.message(`Please enter a whole number between ${min} and ${max}`);
-		
-	} else if ( guessNum === 0 ){
+		continue;
+	}
+	
+	if ( guessNum === 0 ){
 		// stop playing
 		done = true; 
-		
-	} else if( guessNum < number ){
+		continue;	
+	}
+	
+	if( guessNum < number ){
 		// guess was too low
 		prevGuessMsg = `${guessNum} was too low.  `;
-	
-	} else if( guessNum > number ){
+		continue;
+	}
+
+	if( guessNum > number ){
 		// guess was too high
 		prevGuessMsg = `${guessNum} was too high.  `;
-		
-	} else {
-		// guess was correct
-		await $.ui.message(
-			'🥳 YUS!',
-			`You guessed the number was ${number} (in ${guessCount} tries)`
-		);
-		done = true;
-		
+		continue;
 	}
+	
+	// guess was correct
+	await $.ui.message(
+		'🥳 YUS!',
+		`You guessed the number was ${number} (in ${guessCount} tries)`
+	);
+	done = true;
+	
 }
 ```
 ````

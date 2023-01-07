@@ -133,6 +133,60 @@ await $.io.open( 'output/index.html' );
 await $.io.delete( 'output/index.html' );
 ```
 
+## Markers (`$.markers`)
+
+Markers can be used to replace sections of a note with dynamic values.  Sections to be replaced are marked with start and end tokens.
+
+- `$.markers.define_mark_start( prefix, suffix )`
+	- Configures the starting marker
+	- By default this is set to `%%` and `=%%` which will match markers starting with `%%my marker=%%`
+- `$.markers.define_mark_end( prefix, suffix )`
+	- Configures the ending marker
+	- By default this is set to `=%%` and `%%` which will match markers ending with `%%=my marker%%`
+- `$.markers.target_file( file? )`
+	- Sets the target file to `file`
+	- `file` is optional and defaults to the current note
+- `$.markers.set( name, value )`
+	- Sets the marker value named `name` in memory
+- `$.markers.clear()`
+	- Clears any in memory values
+- `markers = await $.markers.fetch()`
+	- Returns the markers found in the target file
+- `changes = await $.markers.apply( clearUnknownMarkerValues? )`
+	- Applys set marker values to the target file
+	- `clearUnknownMarkerValues` is optional, set it to `false` if you want to prevent unset markers being blanked out.
+
+### Examples
+````md
+
+%%marker1=%% replace this %%=marker1%% 
+
+```js meld-build
+//$.markers.define_mark_start( '%%', '=%%' );
+//$.markers.define_mark_end ( '%%=', '%%' );
+
+// target current note
+//$.markers.target_file();
+
+// target some other file
+//$.markers.target_file( 'Marker Target.md' );
+
+// returns list of markers found in the target file
+const markers = await $.markers.fetch();
+//console.log({markers});
+
+// removes marker values from memory
+//$.markers.clear();
+
+// sets a marker value in memory
+$.markers.set( 'marker1', Math.random() );
+
+// apply the new marker values to the target file
+const result = await $.markers.apply(); 
+//console.log({result});
+```
+````
+
 ## Assert (`$.assert`)
 
 You can use `$.assert` to stop the run and show a message if a test fails.

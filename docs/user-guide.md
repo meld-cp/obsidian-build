@@ -14,12 +14,16 @@ Notice that the `JavaScript` codeblock above is accompanied with the text `meld-
 
 The `$` accessor provides a way to use the `meld-build` [API](api.md).
 
+---
+
 ## What happens when a note is run?
 
 Within the current note:
 - All tables are parsed and added to the `$.data` array.
 - All non-`meld-build` blocks are added to the `$.blocks` array.
 - `JavaScript` blocks with `meld-build` are concatenated, sandboxed and executed.
+
+---
 
 ## Toolbar
 
@@ -31,6 +35,8 @@ To make running `meld-build` codeblocks easier you can add the following codeblo
 ````
 
 _TODO: add screenshot_
+
+---
 
 ## Templating
 
@@ -75,6 +81,27 @@ Running this note will show a message with the following text: 'Greetings **John
 
 See the `$.io.import` and `$.io.load` [API](api.md) functions for other ways to load templates.
 
+---
+
+## Markers
+
+It is possible to mark sections of a note with start and end markers.  These sections can then be targeted and their contents replaced with values you specify in a `meld-build` codeblock.
+
+For example, when the following note is run, the `replace me` will be replaced with a random number.
+
+````md
+ %%my marker=%%replace me%%=my marker%%
+
+```js meld-build
+$.markers.set('my marker', Math.random() );
+await $.markers.apply();
+```
+````
+
+See the [API](api.md) or another [example](examples/guess-the-number-marker.md) here.
+
+---
+
 ## Accessing the DataView plugin API
 
 If you are fimilar with the [DataView](https://github.com/blacksmithgu/obsidian-dataview) plugin and have it installed, you can access it's [js api](https://blacksmithgu.github.io/obsidian-dataview/api/code-reference/) via the `$.dv.` interface.
@@ -100,6 +127,8 @@ await $.io.output( 'My List.md', md );
 ```
 ````
 
+---
+
 ## Skipping `meld-build` blocks
 
 If you have multiple `meld-build` codeblocks in a note, you can choose to ignore some by adding `skip` after `meld-build`.
@@ -124,13 +153,18 @@ await $.ui.message(x);
 ```
 ````
 
+---
+
 ## Other
 - It's recommended to turn `on` the `Files & Links > Detect all file extensions` option in Obsidian.  This will make working with files for templating easier.
+
+---
 
 ## More Information
 
 - [API](api.md)
 - Examples
 	- [Guess The Number Game](/docs/examples/guess-the-number.md)
+	- [Guess The Number Game (Using Markers)](/docs/examples/guess-the-number-marker.md)
 	- [Simple Invoice Builder](/docs/examples/invoice-builder.md)
 

@@ -73,11 +73,11 @@ export type TMarkerRunContext = {
 
 	clear() : void;
 
-	set( name:string, value:any ): void;
+	set( name:string, value:string|null ): void;
 
 	fetch() : Promise<MarkerValue[]>;
 
-	apply( keepUnknownMarkers?:boolean ) : Promise<MarkerChange[]>;
+	apply( clearUnknownMarkerValues?:boolean ) : Promise<MarkerChange[]>;
 }
 
 // export class MarkerLocation{

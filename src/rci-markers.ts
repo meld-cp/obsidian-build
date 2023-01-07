@@ -42,7 +42,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		this.newValues.clear();
 	}
 
-	set( name: string, value: any ): void {
+	set( name: string, value: string|null ): void {
 		this.newValues.set( name, value );
 	}
 
@@ -68,11 +68,11 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 	private findMarkers( text:string ): MarkerValue[]{
 		// build marker match rgex
 		const exp = this.escapeRegex(this.markerStartPrefix)
-			+ '(.*)' // marker name start
+			+ '(.*?)' // marker name start
 			+ this.escapeRegex(this.markerStartSuffix)
-			+ '(\n?.*\n?)' // marker value
+			+ '(\n?.*?\n?)' // marker value
 			+ this.escapeRegex(this.markerEndPrefix)
-			+ '(.*)' // marker name end
+			+ '(.*?)' // marker name end
 			+ this.escapeRegex(this.markerEndSuffix)
 		;
 		//console.debug({exp});
@@ -110,16 +110,17 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		return text.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 	}
 
-	async apply( keepUnknownMarkers?:boolean ): Promise<MarkerChange[]> {
+	async apply( clearUnknownMarkerValues?:boolean ): Promise<MarkerChange[]> {
 		let targetFileContent = await this.getTargetContents();
 		const markers = this.findMarkers( targetFileContent );
 
-		if ( keepUnknownMarkers != true ){
-			for (const marker of markers) {
-				if (this.newValues.has(marker.name)){
+		if ( clearUnknownMarkerValues !== false ){
+			for ( const marker of markers ) {
+				if ( this.newValues.has( marker.name ) ){
 					continue;
 				}
-				this.newValues.set( marker.name, null );
+				console.log('apply::clearing marker value', {marker});
+				this.newValues.set( marker.name, '' );
 			}
 		}
 
@@ -128,6 +129,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		for ( const key of this.newValues.keys() ) {
 			const currentMarkers = markers.filter( e => e.name == key );
 			if ( currentMarkers.length == 0 ){
+				console.debug('apply::marker isn\'t in file',{key, markers, targetFileContent});
 				continue; // marker isn't in file
 			}
 			
@@ -136,7 +138,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 			
 			// build replacement regex
 			const findExp = this.escapeRegex(this.markerStartPrefix + key + this.markerStartSuffix)
-			+ '(\n?.*\n?)' // any old marker value
+			+ '(\n?.*?\n?)' // any old marker value
 			+ this.escapeRegex(this.markerEndPrefix + key +this.markerEndSuffix)
 			;
 			const replacement = `${this.markerStartPrefix}${key}${this.markerStartSuffix}${newValue}${this.markerEndPrefix}${key}${this.markerEndSuffix}`;
