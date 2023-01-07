@@ -48,7 +48,6 @@ export class Parser {
 			}
 
 			// filter languages
-			console.debug('Parser::fetchCodeBlocks',{lines});
 			const codeBlockInfo = this.extractCodeBlockInfo(lines[0]);
 			if ( codeBlockInfo == null ){
 				console.debug('Parser::fetchCodeBlocks, codeBlockInfo is null', {content});
@@ -67,7 +66,7 @@ export class Parser {
 			result.push( codeBlock );
 
 		});
-		console.debug('Parser::fetchCodeBlocks', {result});
+		
 		return result;
 	}
 	

@@ -119,7 +119,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 				if ( this.newValues.has( marker.name ) ){
 					continue;
 				}
-				console.log('apply::clearing marker value', {marker});
+				//console.log('apply::clearing marker value', {marker});
 				this.newValues.set( marker.name, '' );
 			}
 		}
@@ -129,10 +129,9 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		for ( const key of this.newValues.keys() ) {
 			const currentMarkers = markers.filter( e => e.name == key );
 			if ( currentMarkers.length == 0 ){
-				console.debug('apply::marker isn\'t in file',{key, markers, targetFileContent});
+				//console.debug('apply::marker isn\'t in file',{key, markers, targetFileContent});
 				continue; // marker isn't in file
 			}
-			
 			
 			const newValue = this.newValues.get(key) ?? '';
 			

@@ -142,7 +142,6 @@ export default class MeldBuildPlugin extends Plugin {
 			const runner = await compiler.compile( logger, view, runGroupTag );
 			runner?.();
 		}catch(e){
-			console.debug('here');
 			await logger.error(e);
 			new Notice(e);
 		}
