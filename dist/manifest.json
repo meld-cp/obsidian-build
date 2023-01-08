@@ -2,7 +2,7 @@
 	"id": "meld-build",
 	"name": "Meld Build",
 	"version": "0.1.3",
-	"minAppVersion": "1.1.9",
+	"minAppVersion": "1.0.1",
 	"description": "Write and execute (sandboxed) JavaScript to render templates, query DataView and create dynamic notes.",
 	"author": "meld-cp",
 	"authorUrl": "https://github.com/meld-cp/",
