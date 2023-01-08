@@ -87,7 +87,7 @@ Here's an example:
 const mytemplate = 'Hello {{name}}';
 const mydata = { name:'World' };
 
-const result = await $.render( mytemplate, mydata );
+const result = $.render( mytemplate, mydata );
 
 await $.ui.message( result );
 ```
@@ -109,7 +109,7 @@ The meld-build block to run:
 const template = $.blocks.at(0); // gets the first non-meld-build block in the note
 const data = { name:'John', message:'How are you?' };
 
-const result = await $.render( template, data );
+const result = $.render( template, data );
 
 await $.ui.message( result );
 ```

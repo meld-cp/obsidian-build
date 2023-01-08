@@ -109,7 +109,7 @@ const customer = customers.filter( e => e.id==inv.customer ).at(0);
 const template = $.blocks.at(0);
 
 // render the template passing in the customer and invoice
-const html = await $.render( template, { customer, inv } );
+const html = $.render( template, { customer, inv } );
 
 // create an html invoice file and open it in the default browser, from there it can be saved as a PDF
 await $.io.output( `inv ${inv.id}.html`, html, true );
