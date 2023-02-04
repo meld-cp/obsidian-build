@@ -1,5 +1,4 @@
 import { App, Modal, Setting } from "obsidian";
-import { Utils } from "src/utils";
 
 export class AskModal extends Modal {
 
@@ -7,8 +6,6 @@ export class AskModal extends Modal {
 	private options:string[] = [];
 	private answerInput:Setting;
 	public answer:string|undefined;
-	private completed = true;
-	//private cancelled = false;
 
 	constructor(app: App) {
 		super(app);
@@ -26,14 +23,16 @@ export class AskModal extends Modal {
 		this.answer = undefined;
 		this.options = options ?? [];
 
-		this.completed = false;
-		
-		this.open();
-		
-		while(!this.completed){
-			await Utils.delay(250);
-		}
+		await new Promise<void>((resolve) => {
+			
+			this.open();
 
+			this.onClose = () => {
+				this.contentEl.empty();
+				resolve();
+			}
+		});
+		
 		return this.answer;
 	}
 
@@ -60,7 +59,7 @@ export class AskModal extends Modal {
 						if (ev.key == 'Enter'){
 							ev.stopPropagation();
 							ev.preventDefault();
-							this.answer = answer;
+							this.answer = answer ?? '';
 							this.close();
 						}
 					})
@@ -74,17 +73,12 @@ export class AskModal extends Modal {
 				cb
 					.setButtonText('OK')
 					.onClick( ev => {
-						this.answer = answer;
+						this.answer = answer ?? '';
 						this.close();
 					})
 				;
 			})
 		;
 	}
-  
-	override onClose() {
-		const { contentEl } = this;
-		this.completed = true;
-		contentEl.empty();
-	}
+
   }

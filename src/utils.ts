@@ -20,10 +20,6 @@ export class Utils{
 		return normalizePath( parentPath + finalFilename );
 	}
 	
-	public static delay(ms: number) : Promise<()=>void> {
-		return new Promise( resolve => setTimeout(resolve, ms) );
-	}
-
 	public static toBase64( buf: ArrayBuffer ) : string {
 		return arrayBufferToBase64( buf );
 	}

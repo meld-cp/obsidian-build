@@ -1,9 +1,14 @@
-import { TFile } from "obsidian";
+import { TFile, Vault } from "obsidian";
 import { Utils } from "src/utils";
 
 export class RunLogger {
 
+	private vault:Vault;
 	private file: TFile|undefined;
+
+	constructor( vault:Vault ){
+		this.vault = vault;
+	}
 
 	private console_info( ...params: any[] ){
 		window.console.info( 'meld-build', ...params );
@@ -53,7 +58,7 @@ export class RunLogger {
 
 		logLine += '\n';
 
-		await app.vault.append( this.file, logLine );
+		await this.vault.append( this.file, logLine );
 		
 	}
 
@@ -65,14 +70,14 @@ export class RunLogger {
 
 		const filepath = Utils.getSameFolderFilepath(filename);
 
-		const af = app.vault.getAbstractFileByPath(filepath);
+		const af = this.vault.getAbstractFileByPath(filepath);
 		if ( af instanceof TFile ){
 			this.file = af;
 			if ( clear == true ){
-				app.vault.modify( this.file, '' );
+				this.vault.modify( this.file, '' );
 			}
 		}else{
-			this.file = await app.vault.create( filepath, '' );
+			this.file = await this.vault.create( filepath, '' );
 		}
 	}
 

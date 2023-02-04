@@ -146,9 +146,19 @@ export class Compiler{
 
 			ui: new UiRunContextImplemention(),
 			
-			io: new IoRunContextImplemention( log, data, consumableBlocks ),
+			io: new IoRunContextImplemention(
+				view.app.vault,
+				view.app.workspace,
+				log,
+				data,
+				consumableBlocks
+			),
 
-			markers: new MarkerRunContextImplemention(log, view.file.path ),
+			markers: new MarkerRunContextImplemention(
+				view.app.vault,
+				log,
+				view.file.path
+			),
 
 			dv: dvGetAPI(),
 		}

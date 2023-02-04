@@ -1,4 +1,4 @@
-import { TFile } from "obsidian";
+import { TFile, Vault } from "obsidian";
 import { MarkerChange, MarkerValue, TMarkerRunContext } from "./run-context";
 import { RunLogger } from "./run-logger";
 
@@ -10,7 +10,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 	private markerEndPrefix = '%%=';
 	private markerEndSuffix = '%%'
 
-
+	private vault: Vault;
 	private log: RunLogger;
 	
 	private currentPath: string;
@@ -18,7 +18,8 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 
 	private newValues = new Map<string,string|null>();
 
-	constructor( log: RunLogger, currentPath:string ){
+	constructor( vault:Vault, log: RunLogger, currentPath:string ){
+		this.vault = vault;
 		this.log = log;
 		this.currentPath = currentPath;
 		this.targetPath = currentPath;
@@ -47,7 +48,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 	}
 
 	private getTargetFileOrThrow(): TFile{
-		const targetFile = app.vault.getAbstractFileByPath( this.targetPath );
+		const targetFile = this.vault.getAbstractFileByPath( this.targetPath );
 
 		if (!(targetFile instanceof TFile)){
 			throw new Error(`Target file path was not found. '${this.targetPath}'`);
@@ -57,7 +58,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 
 	private async getTargetContents() : Promise<string>{
 		const targetFile = this.getTargetFileOrThrow();
-		return await app.vault.read( targetFile );
+		return await this.vault.read( targetFile );
 	}
 
 	async fetch(): Promise<MarkerValue[]> {
@@ -159,7 +160,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		//console.debug({targetFileContent});
 		const targetFile = this.getTargetFileOrThrow();
 		
-		await app.vault.modify( targetFile, targetFileContent );
+		await this.vault.modify( targetFile, targetFileContent );
 
 		return result;
 	}

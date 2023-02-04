@@ -3,18 +3,9 @@ import * as HB from  'handlebars';
 import { RunLogger } from 'src/run-logger';
 import { Compiler } from 'src/compiler';
 import { CODE_BLOCK_LANG_TOOLBAR, URL_HELP } from 'src/constants';
-
-interface MeldBuildPluginSettings {
-	mySetting: string;
-}
-
-const DEFAULT_SETTINGS: MeldBuildPluginSettings = {
-	mySetting: 'default'
-}
+import { ToolbarButton } from './ToolbarButton';
 
 export default class MeldBuildPlugin extends Plugin {
-	settings: MeldBuildPluginSettings;
-
 
 	private async codeblockProcessor(el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
 		const els = el.querySelector('.language-js');
@@ -31,8 +22,6 @@ export default class MeldBuildPlugin extends Plugin {
 
 	async onload() {
 		
-		await this.loadSettings();
-
 		await this.reloadActiveViewsWithToolbars();
 
 		this.registerHandlebarHelpers();
@@ -107,7 +96,7 @@ export default class MeldBuildPlugin extends Plugin {
 	}
 
 	private async reloadActiveViewsWithToolbars(){
-		app.workspace.iterateAllLeaves( leaf =>{
+		this.app.workspace.iterateAllLeaves( leaf =>{
 			const view = leaf.view;
 			if ( view instanceof MarkdownView ){
 				
@@ -123,7 +112,7 @@ export default class MeldBuildPlugin extends Plugin {
 	}
 
 	private async buildAndRunActiveView( runGroupTag?:string ){
-		const view = app.workspace.getActiveViewOfType( MarkdownView );
+		const view = this.app.workspace.getActiveViewOfType( MarkdownView );
 		if (!view){
 			new Notice( 'Unable to run, no active Markdown View found' );
 			return;
@@ -135,7 +124,7 @@ export default class MeldBuildPlugin extends Plugin {
 		if ( !( view instanceof MarkdownView ) ){
 			return;
 		}
-		const logger = new RunLogger();
+		const logger = new RunLogger( view.app.vault );
 		try{
 			//await view.save();
 			const compiler = new Compiler();
@@ -173,39 +162,6 @@ export default class MeldBuildPlugin extends Plugin {
 
 	}
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
 }
 
-class ToolbarButton{
-	id:string;
-	label?: string;
-	params: string[];
-
-	constructor( id:string, label?:string, params?:string[] ){
-		this.id = id;
-		this.label = label;
-		this.params = params ?? [];
-	}
-
-	public static parse( line:string ) : ToolbarButton|null{
-		const pair = line.split( '=' );
-		if( pair.length == 2 ){
-			
-			const buttonParts = pair[0].split( '|' ).map( e => e.trim() );
-			const id = buttonParts.shift() ?? '';
-			const params = buttonParts;
-		
-			const label = pair[1].trim();
-
-			return new ToolbarButton( id, label, params );
-		}
-		return null;
-	}
-}
 

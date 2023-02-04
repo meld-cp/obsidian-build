@@ -12,8 +12,8 @@ export class Parser {
 		const result: NamedCodeBlock[] = [];
 		
 		const file = view.file;
-		const fileContent = await app.vault.read(file);
-		const fileCache = app.metadataCache.getFileCache( file );
+		const fileContent = await view.app.vault.read(file);
+		const fileCache = view.app.metadataCache.getFileCache( file );
 
 		if ( fileCache == null ){
 			console.debug('Parser::fetchCodeBlocks, fileCache is null');
@@ -214,8 +214,8 @@ export class Parser {
 		} = {};
 		
 		const file = view.file;
-		const fileContent = await app.vault.read(file);
-		const fileCache = app.metadataCache.getFileCache( file );
+		const fileContent = await view.app.vault.read(file);
+		const fileCache = view.app.metadataCache.getFileCache( file );
 
 		if ( fileCache == null ){
 			return result;

@@ -1,10 +1,8 @@
 import { App, Modal } from "obsidian";
-import { Utils } from "src/utils";
 
 export class MessageModal extends Modal {
 
 	private message:string;
-	private closed = true;
 
 	constructor(app: App) {
 		super(app);
@@ -18,14 +16,17 @@ export class MessageModal extends Modal {
 		this.titleEl.setText( title );
 		
 		this.message = message;
-		this.closed = false;
 		
-		this.open();
-		
-		while(!this.closed){
-			await Utils.delay(250);
-		}
-		
+		await new Promise<void>((resolve) => {
+			
+			this.open();
+
+			this.onClose = () => {
+				this.contentEl.empty();
+				resolve();
+			}
+		});
+
 	}
 
 	onOpen() {
@@ -33,10 +34,5 @@ export class MessageModal extends Modal {
 		const formattedLines = this.message.split('\n').join('<br/>');
 		contentEl.innerHTML = formattedLines;
 	}
-  
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-		this.closed = true;
-	}
+
   }

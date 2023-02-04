@@ -1,4 +1,4 @@
-import { normalizePath, TFile } from "obsidian";
+import { normalizePath, TFile, Vault, Workspace } from "obsidian";
 import { EXTENSION_MIMETYPE_MAP } from "./constants";
 import { DataSet, IDataSetCollection } from "./data-set";
 import { NamedCodeBlock } from "./named-code-block";
@@ -9,18 +9,22 @@ import { Utils } from "./utils";
 
 export class IoRunContextImplemention implements TIoRunContext {
 
+	private vault: Vault;
+	private workspace: Workspace;
 	private log: RunLogger;
 	private data:IDataSetCollection;
 	private consumableBlocks:NamedCodeBlock[]
 
-	constructor( log: RunLogger, data:IDataSetCollection, consumableBlocks:NamedCodeBlock[] ){
+	constructor( vault:Vault, workspace:Workspace, log: RunLogger, data:IDataSetCollection, consumableBlocks:NamedCodeBlock[] ){
+		this.vault = vault;
+		this.workspace = workspace;
 		this.log = log;
 		this.data = data;
 		this.consumableBlocks = consumableBlocks;
 	}
 
 	private getAbsoluteFilepathFromActiveFile( path:string ) : string | undefined {
-		const activeFile = app.workspace.getActiveFile();
+		const activeFile = this.workspace.getActiveFile();
 		if (activeFile == null){
 			return;
 		}
@@ -35,12 +39,12 @@ export class IoRunContextImplemention implements TIoRunContext {
 			return resultDataSet;
 		}
 
-		const file = app.vault.getAbstractFileByPath(absFilepath);
+		const file = this.vault.getAbstractFileByPath(absFilepath);
 
 		const pzr = new Parser();
 		if (file instanceof TFile){
 			if (file.extension == 'csv'){
-				const csvdata = await app.vault.read( file );
+				const csvdata = await this.vault.read( file );
 				resultDataSet = pzr.loadCsv(csvdata);
 				this.data[name??file.basename] = resultDataSet;
 			}
@@ -56,7 +60,7 @@ export class IoRunContextImplemention implements TIoRunContext {
 			return false;
 		}
 
-		const file = app.vault.getAbstractFileByPath(absFilepath);
+		const file = this.vault.getAbstractFileByPath(absFilepath);
 		
 		if (!(file instanceof TFile)){
 			await this.log.error(`import::File not found: "${path}"`);
@@ -64,7 +68,7 @@ export class IoRunContextImplemention implements TIoRunContext {
 		}
 
 		if ( file.extension == 'md' ){
-			const content = await app.vault.read( file );
+			const content = await this.vault.read( file );
 			const pzr = new Parser();
 			pzr.applyMarkdownContent(
 				file.basename,
@@ -82,13 +86,13 @@ export class IoRunContextImplemention implements TIoRunContext {
 	async load(path: string): Promise<string | undefined> {
 		const filepath = Utils.getSameFolderFilepath(path);
 					
-		const af = app.vault.getAbstractFileByPath(filepath);
+		const af = this.vault.getAbstractFileByPath(filepath);
 		
 		if (!(af instanceof TFile)){
 			return undefined;
 		}
 
-		return await app.vault.read(af)
+		return await this.vault.read(af)
 	}
 
 	async load_data(path: string, name?: string | undefined): Promise<DataSet> {
@@ -98,7 +102,7 @@ export class IoRunContextImplemention implements TIoRunContext {
 	async load_data_url(path: string, mimetype?: string | undefined): Promise<string | undefined> {
 		const filepath = Utils.getSameFolderFilepath(path);
 					
-		const af = app.vault.getAbstractFileByPath(filepath);
+		const af = this.vault.getAbstractFileByPath(filepath);
 		
 		if (!(af instanceof TFile)){
 			return Promise.resolve(undefined);
@@ -109,7 +113,7 @@ export class IoRunContextImplemention implements TIoRunContext {
 			?? ''
 		;
 
-		const base64Data = Utils.toBase64( await app.vault.readBinary(af) );
+		const base64Data = Utils.toBase64( await this.vault.readBinary(af) );
 		
 		return `data:${finalMimeType};base64,${base64Data}`;
 	}
@@ -117,28 +121,28 @@ export class IoRunContextImplemention implements TIoRunContext {
 	async output(file: string, content: string, open?: boolean | undefined): Promise<void> {
 		const newFilepath = Utils.getSameFolderFilepath(file);
 				
-		const af = app.vault.getAbstractFileByPath(newFilepath);
+		const af = this.vault.getAbstractFileByPath(newFilepath);
 		if (af instanceof TFile){
-			await app.vault.trash(af, false);
+			await this.vault.trash(af, false);
 		}
 
-		await app.vault.create( newFilepath, content );
+		await this.vault.create( newFilepath, content );
 	
 		//new Notice(`${newFilepath} created`);
 		if (open == true){
-			await app.workspace.openLinkText( newFilepath, '' );
+			await this.workspace.openLinkText( newFilepath, '' );
 		}
 	}
 
 	async open(linktext: string): Promise<void> {
-		await app.workspace.openLinkText( linktext, '' );
+		await this.workspace.openLinkText( linktext, '' );
 	}
 
 	async delete(path: string): Promise<void> {
 		const filepath = Utils.getSameFolderFilepath(path);
-		const af = app.vault.getAbstractFileByPath(filepath);
+		const af = this.vault.getAbstractFileByPath(filepath);
 		if (af instanceof TFile){
-			await app.vault.trash(af, false);
+			await this.vault.trash(af, false);
 		}
 	}
 
