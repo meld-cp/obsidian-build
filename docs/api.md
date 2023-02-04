@@ -96,7 +96,7 @@ Read and write vault files.
 	- The loaded data is also returned
 - `const dataurl = await $.io.load_data_url( path, mimetype? )`
 	- Encode the contents of a file into a dataurl for use in a template
-	- Optionaly specify the mime type.
+	- Optionally specify the mime type.
 	- Auto mime type mappings are available for the following common file extensions: `.jpeg`, `.jpg`, `.png`, `.gif`, `.svg`, `.css`
 - `await $.io.output( file, content, open? )`
 	- (Over)Writes the `file` with given `content`
@@ -157,7 +157,7 @@ Markers can be used to replace sections of a note with dynamic values.  Sections
 - `markers = await $.markers.fetch()`
 	- Returns the markers found in the target file
 - `changes = await $.markers.apply( clearUnknownMarkerValues? )`
-	- Applys set marker values to the target file
+	- Applies set marker values to the target file
 	- `clearUnknownMarkerValues` is optional, set it to `false` if you want to prevent unset markers being blanked out.
 
 ### Examples

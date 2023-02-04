@@ -36,7 +36,7 @@ await $.ui.message('This is the init codeblock');
 ```
 ````
 
-Multiple codeblocks with the same tag will be concatinated together before running.
+Multiple codeblocks with the same tag will be concatenated together before running.
 
 To skip a codeblock all together, use the `skip` tag like this:
 ````md
@@ -143,7 +143,7 @@ See the [API](api.md) or another [example](examples/guess-the-number-marker.md) 
 
 ## Accessing the DataView plugin API
 
-If you are fimilar with the [DataView](https://github.com/blacksmithgu/obsidian-dataview) plugin and have it installed, you can access it's [js api](https://blacksmithgu.github.io/obsidian-dataview/api/code-reference/) via the `$.dv.` interface.
+If you are familiar with the [DataView](https://github.com/blacksmithgu/obsidian-dataview) plugin and have it installed, you can access it's [js api](https://blacksmithgu.github.io/obsidian-dataview/api/code-reference/) via the `$.dv.` interface.
 
 For example:
 ````md
