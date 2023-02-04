@@ -73,8 +73,10 @@ export type TMarkerRunContext = {
 
 	clear() : void;
 
+	get( name:string ): string|null|undefined;
 	set( name:string, value:string|null ): void;
-
+	
+	load() : Promise<void>;
 	fetch() : Promise<MarkerValue[]>;
 
 	apply( clearUnknownMarkerValues?:boolean ) : Promise<MarkerChange[]>;

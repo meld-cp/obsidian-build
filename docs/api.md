@@ -146,6 +146,10 @@ Markers can be used to replace sections of a note with dynamic values.  Sections
 - `$.markers.target_file( file? )`
 	- Sets the target file to `file`
 	- `file` is optional and defaults to the current note
+- `await $.markers.load()`
+	- Loads target file markers into memory
+- `$.markers.get( name )`
+	- Gets the marker value named `name` from memory
 - `$.markers.set( name, value )`
 	- Sets the marker value named `name` in memory
 - `$.markers.clear()`

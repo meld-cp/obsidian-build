@@ -43,6 +43,17 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		this.newValues.clear();
 	}
 
+	async load() : Promise<void>{
+		const markers = await this.fetch();
+		markers.forEach(mk => {
+			this.set(mk.name, mk.value);
+		});
+	}
+
+	get( name: string ) : string|null|undefined {
+		return this.newValues.get( name );
+	}
+
 	set( name: string, value: string|null ): void {
 		this.newValues.set( name, value );
 	}
