@@ -176,11 +176,17 @@ Markers can be used to replace sections of a note with dynamic values.  Sections
 //$.markers.target_file( 'Marker Target.md' );
 
 // returns list of markers found in the target file
-const markers = await $.markers.fetch();
+//const markers = await $.markers.fetch();
 //console.log({markers});
+
+// loads maker values into memory from target file
+await $.markers.load();
 
 // removes marker values from memory
 //$.markers.clear();
+
+// gets a marker value from memory
+const value = $.markers.get( 'marker1' );
 
 // sets a marker value in memory
 $.markers.set( 'marker1', Math.random() );
