@@ -10,7 +10,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 	private markerEndPrefix = '%%=';
 	private markerEndSuffix = '%%'
 
-	private markerValueRegEx = '((?>.|\n|\r)*)';
+	private markerValueRegEx = '((?:.|\n|\r)*)';
 	
 	private vault: Vault;
 	private log: RunLogger;
@@ -89,7 +89,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 			+ '(.*?)' // marker name end
 			+ this.escapeRegex(this.markerEndSuffix)
 		;
-		//console.debug({exp});
+		console.debug({exp});
 		const rgexp = new RegExp(exp, 'g');
 		
 		const matches = text.matchAll( rgexp );
