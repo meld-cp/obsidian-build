@@ -15,7 +15,7 @@ export default class MeldBuildPlugin extends Plugin {
 		}
 
 		if ( els.getText().contains( '//@hide_when_reading' ) ){
-			console.debug('Hiding element',{el});
+			//console.debug('Hiding element',{el});
 			el.hide();
 		}
 	}
