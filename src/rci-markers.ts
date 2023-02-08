@@ -10,6 +10,8 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 	private markerEndPrefix = '%%=';
 	private markerEndSuffix = '%%'
 
+	private markerValueRegEx = '((?>.|\n|\r)*)';
+	
 	private vault: Vault;
 	private log: RunLogger;
 	
@@ -82,7 +84,7 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 		const exp = this.escapeRegex(this.markerStartPrefix)
 			+ '(.*?)' // marker name start
 			+ this.escapeRegex(this.markerStartSuffix)
-			+ '(\n?.*?\n?)' // marker value
+			+ this.markerValueRegEx // marker value
 			+ this.escapeRegex(this.markerEndPrefix)
 			+ '(.*?)' // marker name end
 			+ this.escapeRegex(this.markerEndSuffix)
@@ -149,8 +151,8 @@ export class MarkerRunContextImplemention implements TMarkerRunContext {
 			
 			// build replacement regex
 			const findExp = this.escapeRegex(this.markerStartPrefix + key + this.markerStartSuffix)
-			+ '(\n?.*?\n?)' // any old marker value
-			+ this.escapeRegex(this.markerEndPrefix + key +this.markerEndSuffix)
+				+ this.markerValueRegEx // any old marker value
+				+ this.escapeRegex(this.markerEndPrefix + key +this.markerEndSuffix)
 			;
 			const replacement = `${this.markerStartPrefix}${key}${this.markerStartSuffix}${newValue}${this.markerEndPrefix}${key}${this.markerEndSuffix}`;
 			
