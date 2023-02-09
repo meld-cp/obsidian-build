@@ -1,5 +1,23 @@
 export class DataSet extends Array<DataSetRow> {
 	
+	public columns:string[] = [];
+
+	constructor( columnNames:string[] ){
+
+		super();
+
+		this.columns = columnNames.map( cn => cn.trim() );
+
+	}
+
+	private extractAsColumnName( str:string ) : string {
+		return str.trim().replaceAll(/\W/ig, '_').toLowerCase().trim();
+	}
+
+	public getPropertyName ( colName:string ) : string | undefined {
+		return this.extractAsColumnName( colName );
+	}
+
 }
 
 export interface IDataSetCollection {
@@ -14,12 +32,13 @@ export class DataSetRow implements IRowDataValueCollection{
 	
 	[column: string]: unknown;
 
-	constructor(columnNames:string[], data: unknown[]){
-		for (let colIdx = 0; colIdx < columnNames.length; colIdx++) {
-			const value = data.at(colIdx);
-			const colName = columnNames[colIdx].trim();
-			if ( colName != '' ){
-				this[colName] = value;
+	constructor( dataSet:DataSet, values: unknown[] ){
+		const columns = dataSet.columns;
+		for ( let colIdx = 0; colIdx < columns.length; colIdx++ ) {
+			const rawColName = columns[colIdx];
+			const propColName = dataSet.getPropertyName(rawColName);
+			if ( propColName !== undefined ){
+				this[propColName] = values.at(colIdx);
 			}
 		}
 	}

@@ -2,7 +2,7 @@ import { TFile, Vault } from "obsidian";
 import { MarkerChange, MarkerValue, TMarkerRunContext } from "./run-context";
 import { RunLogger } from "./run-logger";
 
-export class MarkerRunContextImplemention implements TMarkerRunContext {
+export class MarkerRunContextImplementation implements TMarkerRunContext {
 	
 	private markerStartPrefix = '%%';
 	private markerStartSuffix = '=%%';

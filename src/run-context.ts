@@ -24,6 +24,8 @@ export type TRunContext = {
 
 	dv: DataviewApi | undefined;
 
+	md: TMarkdownHelperRunContext;
+
 }
 
 export type TUiRunContext = {
@@ -116,3 +118,9 @@ export class MarkerChange{
 	}
 }
 
+
+
+export type TMarkdownHelperRunContext = {
+	table( headings:Array<string>, rows:Array<Array<any>>  ) : string;
+	table( data:DataSet  ) : string;
+}

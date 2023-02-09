@@ -197,6 +197,15 @@ const result = await $.markers.apply();
 ```
 ````
 
+## Markdown Helper (`$.md`)
+
+- `$.md.table( headers:[], rows:[[]])`
+	- Build a markdown table
+	- e.g. `$.md.table( ['header 1', 'header2'], rows:[ ['row 1 col 1', 'row 1 col 2'], ['row 2 col 1', 'row 2 col 2'], ])`
+- `$.md.table( data )`
+	- Build a markdown table from imported data
+	- e.g. `$.md.table( $.data.customers )`
+
 ## Assert (`$.assert`)
 
 You can use `$.assert` to stop the run and show a message if a test fails.

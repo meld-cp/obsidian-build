@@ -6,10 +6,11 @@ import { RunLogger } from 'src/run-logger';
 import { TRunContext } from "src/run-context";
 import { NamedCodeBlock } from "./named-code-block";
 import { CodeBlockInfoHelper } from "./code-block-info";
-import { AssertRunContextImplemention } from "./rci-assert";
-import { UiRunContextImplemention } from "./rci-ui";
-import { IoRunContextImplemention } from "./rci-io";
-import { MarkerRunContextImplemention } from "./rci-markers";
+import { AssertRunContextImplementation } from "./rci-assert";
+import { UiRunContextImplementation } from "./rci-ui";
+import { IoRunContextImplementation } from "./rci-io";
+import { MarkerRunContextImplementation } from "./rci-markers";
+import { MarkdownHelperRunContextImplementation } from "./rci-markdown";
 
 export class Compiler{
 
@@ -142,11 +143,11 @@ export class Compiler{
 				return '';
 			},
 
-			assert: new AssertRunContextImplemention(),
+			assert: new AssertRunContextImplementation(),
 
-			ui: new UiRunContextImplemention(),
+			ui: new UiRunContextImplementation(),
 			
-			io: new IoRunContextImplemention(
+			io: new IoRunContextImplementation(
 				view.app.vault,
 				view.app.workspace,
 				log,
@@ -154,13 +155,15 @@ export class Compiler{
 				consumableBlocks
 			),
 
-			markers: new MarkerRunContextImplemention(
+			markers: new MarkerRunContextImplementation(
 				view.app.vault,
 				log,
 				view.file.path
 			),
 
 			dv: dvGetAPI(),
+
+			md: new MarkdownHelperRunContextImplementation( log )
 		}
 	}
 

@@ -3,7 +3,7 @@ import { AskModal } from "./modal-ask";
 import { MessageModal } from "./modal-message";
 import { TUiRunContext } from "./run-context";
 
-export class UiRunContextImplemention implements TUiRunContext {
+export class UiRunContextImplementation implements TUiRunContext {
 
 	notice(
 		message: string | DocumentFragment,

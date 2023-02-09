@@ -1,7 +1,7 @@
 import { MessageModal } from "./modal-message";
 import { TAssertRunContext } from "./run-context";
 
-export class AssertRunContextImplemention implements TAssertRunContext {
+export class AssertRunContextImplementation implements TAssertRunContext {
 
 	private async showFailMessage( label:string, msg:string ) : Promise<void>{
 		const title = '❗ Assert Failed' + ( label.length > 0 ? ` - ${label}` : '' );

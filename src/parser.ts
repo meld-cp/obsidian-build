@@ -104,20 +104,20 @@ export class Parser {
 	public loadCsv( csvContent:string ) : DataSet {
 		const lines = csvContent.split('\n').map( e=>e.trim() );
 		if (lines.length == 0){
-			return new DataSet();
+			return new DataSet( [] );
 		}
 		
-		const columns = lines.first()?.split(',').map( e => this.extractAsColumnName(e) ) ?? [];
+		const columns = lines.first()?.split(',') ?? [];
 		
-		const rows = new Array<DataSetRow>();
+		const ds = new DataSet( columns );
+
+		//const rows = new Array<DataSetRow>();
 
 		for (let i = 1; i < lines.length; i++) {
 			const rowData = lines[i].split(',').map( d => this.extractValueFromString(d));
-			rows.push( new DataSetRow(columns, rowData));
+			ds.push( new DataSetRow(ds, rowData));
 		}
 
-		const ds = new DataSet( ...rows );
-		
 		return ds;
 	}
 
@@ -181,19 +181,15 @@ export class Parser {
 	}
 
 	private parseMdTable( tableLines:string[] ): DataSet {
-		const data: DataSet = new DataSet();
 		
-		const tlines = tableLines
-		.map( e=>e.trim().slice(1,-1).trim());
+		const tlines = tableLines.map( e=>e.trim().slice(1,-1).trim());
+		
+		const columns = tlines.first()?.split('|') ?? [];
+		
+		const data: DataSet = new DataSet( columns );
 
-		const columns = tlines
-			.first()?.split('|')
-			.map( e=> this.extractAsColumnName(e) )
-			.filter( e=>e.length > 0)
-			?? []
-		;
 
-		for (let i = 1; i < tlines.length; i++) {
+		for (let i = 2; i < tlines.length; i++) {
 			const rowLine = tlines[i];
 			if (rowLine.startsWith('---') ){
 				continue;
@@ -202,7 +198,7 @@ export class Parser {
 				continue;
 			}
 			const rowValues : unknown[] = rowLine.split('|').map( e => this.extractValueFromString(e) );
-			data.push( new DataSetRow( columns, rowValues ) );
+			data.push( new DataSetRow( data, rowValues ) );
 		}
 
 		return data;
@@ -287,10 +283,6 @@ export class Parser {
 		return str.trim().replaceAll(/\W/ig, '_').toLowerCase();
 	}
 
-	private extractAsColumnName( str:string ) : string {
-		return str.trim().replaceAll(/\W/ig, '_').toLowerCase();
-	}
-	
 	private extractValueFromString( str:string ) : string | number | Date {
 		const trimmed = str.trim();
 

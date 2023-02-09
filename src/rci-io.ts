@@ -7,7 +7,7 @@ import { TIoRunContext } from "./run-context";
 import { RunLogger } from "./run-logger";
 import { Utils } from "./utils";
 
-export class IoRunContextImplemention implements TIoRunContext {
+export class IoRunContextImplementation implements TIoRunContext {
 
 	private vault: Vault;
 	private workspace: Workspace;
@@ -32,25 +32,27 @@ export class IoRunContextImplemention implements TIoRunContext {
 	}
 
 	private async data_loader(filepath:string, name?:string) : Promise<DataSet>{
-		let resultDataSet = new DataSet();
-
+		
 		const absFilepath = this.getAbsoluteFilepathFromActiveFile(filepath);
 		if (!absFilepath){
-			return resultDataSet;
+			return new DataSet([]);
 		}
-
+		
 		const file = this.vault.getAbstractFileByPath(absFilepath);
-
+		
 		const pzr = new Parser();
+
 		if (file instanceof TFile){
-			if (file.extension == 'csv'){
+
+			if ( file.extension == 'csv'){
 				const csvdata = await this.vault.read( file );
-				resultDataSet = pzr.loadCsv(csvdata);
-				this.data[name??file.basename] = resultDataSet;
+				const dataSet = pzr.loadCsv(csvdata);
+				this.data[name??file.basename] = dataSet;
+				return dataSet;
 			}
 		}
 		
-		return resultDataSet;
+		return new DataSet([]);
 	}
 
 	async import(path: string): Promise<boolean> {
