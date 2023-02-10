@@ -3,10 +3,13 @@ export class DataSet extends Array<DataSetRow> {
 	public columns:string[] = [];
 
 	constructor( columnNames:string[] ){
-
 		super();
+		
+		//console.debug( "DataSet:", {columnNames} );
 
-		this.columns = columnNames.map( cn => cn.trim() );
+		if ( Array.isArray( columnNames ) && columnNames.length > 0 ){
+			this.columns = columnNames.map( cn => cn.trim() );
+		}
 
 	}
 
