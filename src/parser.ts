@@ -16,12 +16,12 @@ export class Parser {
 		const fileCache = view.app.metadataCache.getFileCache( file );
 
 		if ( fileCache == null ){
-			console.debug('Parser::fetchCodeBlocks, fileCache is null');
+			//console.debug('Parser::fetchCodeBlocks, fileCache is null');
 			return result;
 		}
 
 		if ( fileCache.sections == undefined ){
-			console.debug('Parser::fetchCodeBlocks, fileCache.sections is undefined');
+			//console.debug('Parser::fetchCodeBlocks, fileCache.sections is undefined');
 			return result;
 		}
 		
@@ -50,7 +50,7 @@ export class Parser {
 			// filter languages
 			const codeBlockInfo = this.extractCodeBlockInfo(lines[0]);
 			if ( codeBlockInfo == null ){
-				console.debug('Parser::fetchCodeBlocks, codeBlockInfo is null', {content});
+				//console.debug('Parser::fetchCodeBlocks, codeBlockInfo is null', {content});
 				return;
 			}
 
@@ -83,7 +83,7 @@ export class Parser {
 		//const matches = line.match(/````*/i);
 		
 		if ( codeBlockMatch == null || codeBlockMatch.length < 1 ){
-			console.debug('Parser::extractCodeBlockInfo, codeBlockMatch is null or length < 1', {codeBlockMatch, line});
+			//console.debug('Parser::extractCodeBlockInfo, codeBlockMatch is null or length < 1', {codeBlockMatch, line});
 			return null;
 		}
 

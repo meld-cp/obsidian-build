@@ -104,7 +104,7 @@ export default class MeldBuildPlugin extends Plugin {
 					return;
 				}
 		
-				console.debug( `Meld-Build::Rebuilding view for file '${view.file.path}'` );
+				//console.debug( `Meld-Build::Rebuilding view for file '${view.file.path}'` );
 		
 				(view.leaf as any).rebuildView();		
 			}

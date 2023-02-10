@@ -10,7 +10,7 @@ export class MarkerRunContextImplementation implements TMarkerRunContext {
 	private markerEndPrefix = '%%=';
 	private markerEndSuffix = '%%'
 
-	private markerValueRegEx = '((?:.|\n|\r)*)';
+	private markerValueRegEx = '((?:.|\\n|\\r)*?)';
 	
 	private vault: Vault;
 	private log: RunLogger;
@@ -89,15 +89,19 @@ export class MarkerRunContextImplementation implements TMarkerRunContext {
 			+ '(.*?)' // marker name end
 			+ this.escapeRegex(this.markerEndSuffix)
 		;
-		//console.debug({exp});
-		const rgexp = new RegExp(exp, 'g');
+		
+		//console.debug('MarkerRunContextImplementation::findMarkers', {exp});
+		
+		const rgexp = new RegExp(exp, 'gm');
 		
 		const matches = text.matchAll( rgexp );
 
 		const result:MarkerValue[] = [];
-
+		
 		for (const match of matches) {
+			
 			//console.debug({match});
+
 			if( match.index == undefined ){
 				continue;
 			}
@@ -158,7 +162,7 @@ export class MarkerRunContextImplementation implements TMarkerRunContext {
 			
 			//console.log({findExp, replacement, currentMarkers});
 			
-			const findRegex = new RegExp(findExp, 'g');
+			const findRegex = new RegExp(findExp, 'gm');
 			
 			targetFileContent = targetFileContent.replaceAll( findRegex, replacement );
 			
