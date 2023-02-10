@@ -60,7 +60,7 @@ class MarkdownTableHelper {
             '',
         ]
 
-        console.debug({lines});
+        //console.debug({lines});
 
         return lines.join('\n');
 	
