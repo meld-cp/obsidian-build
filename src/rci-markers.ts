@@ -71,7 +71,7 @@ export class MarkerRunContextImplementation implements TMarkerRunContext {
 
 	private async getTargetContents() : Promise<string>{
 		const targetFile = this.getTargetFileOrThrow();
-		return await this.vault.read( targetFile );
+		return await this.vault.cachedRead( targetFile );
 	}
 
 	async fetch(): Promise<MarkerValue[]> {

@@ -12,7 +12,7 @@ export class Parser {
 		const result: NamedCodeBlock[] = [];
 		
 		const file = view.file;
-		const fileContent = await view.app.vault.read(file);
+		const fileContent = await view.app.vault.cachedRead(file);
 		const fileCache = view.app.metadataCache.getFileCache( file );
 
 		if ( fileCache == null ){
@@ -210,7 +210,7 @@ export class Parser {
 		} = {};
 		
 		const file = view.file;
-		const fileContent = await view.app.vault.read(file);
+		const fileContent = await view.app.vault.cachedRead(file);
 		const fileCache = view.app.metadataCache.getFileCache( file );
 
 		if ( fileCache == null ){
@@ -232,9 +232,6 @@ export class Parser {
 			} 
 			if ( section.type == 'table' ){
 
-				// const from = editor.offsetToPos(section.position.start.offset);
-				// const to = editor.offsetToPos(section.position.end.offset);
-				// const table = editor.getRange( from, to );
 				const table = fileContent.slice(
 					section.position.start.offset,
 					section.position.end.offset

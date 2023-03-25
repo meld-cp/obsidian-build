@@ -45,8 +45,8 @@ export class IoRunContextImplementation implements TIoRunContext {
 		if (file instanceof TFile){
 
 			if ( file.extension == 'csv'){
-				const csvdata = await this.vault.read( file );
-				const dataSet = pzr.loadCsv(csvdata);
+				const csvData = await this.vault.cachedRead( file );
+				const dataSet = pzr.loadCsv(csvData);
 				this.data[name??file.basename] = dataSet;
 				return dataSet;
 			}
@@ -70,7 +70,7 @@ export class IoRunContextImplementation implements TIoRunContext {
 		}
 
 		if ( file.extension == 'md' ){
-			const content = await this.vault.read( file );
+			const content = await this.vault.cachedRead( file );
 			const pzr = new Parser();
 			pzr.applyMarkdownContent(
 				file.basename,
@@ -94,7 +94,7 @@ export class IoRunContextImplementation implements TIoRunContext {
 			return undefined;
 		}
 
-		return await this.vault.read(af)
+		return await this.vault.cachedRead(af)
 	}
 
 	async load_data(path: string, name?: string | undefined): Promise<DataSet> {
