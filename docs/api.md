@@ -75,8 +75,8 @@ const ans4 = await $.ui.ask( 'Title', 'question 4', ['1', '2', '3'] );
 // show a message
 await $.ui.message( `Your answers were:\n\n${ans1}, ${ans2}, ${ans3}, ${ans4}` );
 
-// show a message with title
-await $.ui.message( 'A Title', 'A titled <b>message</b>' );
+// show a 2 line message with title
+await $.ui.message( 'A Title', 'A titled message\nLine 2' );
 await $.ui.message( 'Math', 13 * 67 );
 
 // rebuild the current view, may be needed if you have an embedded note which was modified
