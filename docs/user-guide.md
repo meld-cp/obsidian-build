@@ -100,8 +100,8 @@ Say your note looks like this:
 # My Runnable Note
 
 The template codeblock:
-```html
-<p>Greetings <strong>{{name}}</strong>, {{message}}</p>
+```
+Greetings {{name}}, {{message}}
 ```
 
 The meld-build block to run:
@@ -116,7 +116,7 @@ await $.ui.message( result );
 
 ````
 
-Running this note will show a message with the following text: 'Greetings **John**, How are you?'
+Running this note will show a message with the following text: 'Greetings John, How are you?'
 
 See the `$.io.import` and `$.io.load` [API](api.md) functions for other ways to load templates.
 
