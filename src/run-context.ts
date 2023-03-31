@@ -118,9 +118,9 @@ export class MarkerChange{
 	}
 }
 
-
+export type TMarkdownHelperTableCellFormatter = (propName:string, value:any) => string|undefined;
 
 export type TMarkdownHelperRunContext = {
 	table( headings:Array<string>, rows:Array<Array<any>>  ) : string;
-	table( data:DataSet  ) : string;
+	table( data:DataSet, cellFormatter?:TMarkdownHelperTableCellFormatter ) : string;
 }

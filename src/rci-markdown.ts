@@ -1,5 +1,5 @@
 import { DataSet } from "./data-set";
-import { TMarkdownHelperRunContext } from "./run-context";
+import { TMarkdownHelperRunContext, TMarkdownHelperTableCellFormatter } from "./run-context";
 import { RunLogger } from "./run-logger";
 
 export class MarkdownHelperRunContextImplementation implements TMarkdownHelperRunContext{
@@ -14,7 +14,7 @@ export class MarkdownHelperRunContextImplementation implements TMarkdownHelperRu
         return MarkdownTableHelper.buildTable( headings, rows );
     }
 
-    buildTableFromDataSet(data: DataSet): string {
+    buildTableFromDataSet(data: DataSet, cellFormatter?:TMarkdownHelperTableCellFormatter): string {
         const headings = data.columns;
         const rowValues : any[][] = [];
         
@@ -23,7 +23,13 @@ export class MarkdownHelperRunContextImplementation implements TMarkdownHelperRu
 
             for (const heading of headings) {
                 const prop = data.getPropertyName(heading);
-                const value = prop == undefined ? undefined : row[prop];
+                let value = prop == undefined ? undefined : row[prop];
+                if (prop != undefined && cellFormatter != null){
+                    const formattedValue = cellFormatter(prop, value);
+                    if (formattedValue != undefined){
+                        value = formattedValue;
+                    }
+                }
                 values.push(value);
             }
 
@@ -35,7 +41,7 @@ export class MarkdownHelperRunContextImplementation implements TMarkdownHelperRu
     
     public table(arg1: unknown, arg2?: unknown): string {
         if (arg1 instanceof DataSet){
-            return this.buildTableFromDataSet(arg1);
+            return this.buildTableFromDataSet(arg1, arg2 as TMarkdownHelperTableCellFormatter);
         }
         if ( Array.isArray(arg1) && Array.isArray(arg2) ){
             return this.buildTable(arg1, arg2);
